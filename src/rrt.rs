@@ -22,14 +22,15 @@ pub struct Rrt<C, NN> {
     nn: NN,
 }
 
-impl<C, NN> Rrt<C, NN>
-where
-    NN: NearestNeighborsMap<C, usize>,
-    C: Clone,
-{
-    pub fn new(root: C) -> Self {
+impl<C, NN> Rrt<C, NN> {
+    pub fn new<SS>(root: C, space: &SS) -> Self
+    where
+        NN: NearestNeighborsMap<C, usize, SS>,
+        C: Clone,
+        SS: MetricSpace<Configuration = C>,
+    {
         let mut nn = NN::empty();
-        nn.insert(root.clone(), 0);
+        nn.insert(root.clone(), 0, space);
         Rrt {
             configurations: vec![root],
             parent_ids: vec![0],
@@ -37,8 +38,8 @@ where
         }
     }
 
-    fn grow_help<SS, G, TC: TimeoutCondition, RNG: Rng, R>(
-        &mut self,
+    fn grow_help<'a, SS, G, TC: TimeoutCondition, RNG: Rng, R>(
+        &'a mut self,
         space: &SS,
         goal: &G,
         radius: R,
@@ -49,7 +50,9 @@ where
     where
         G: SampleSpace<Configuration = C>,
         SS: Space<Configuration = C, Distance = R>,
+        NN: NearestNeighborsMap<C, usize, SS>,
         R: Clone,
+        C: Clone,
     {
         let distn = Uniform::new(0.0, 1.0);
         while !timeout.is_over() {
@@ -58,11 +61,10 @@ where
             } else {
                 space.sample(rng)
             };
-            let start_id = *self
+            let (start_cfg, &start_id) = self
                 .nn
-                .nearest(&target)
+                .nearest(&target, space)
                 .expect("NN must always have elements");
-            let start_cfg = &self.configurations[start_id];
             let end_cfg = space.grow_toward(start_cfg, &target, radius.clone());
             if !space.is_valid_transition(&start_cfg, &end_cfg) {
                 continue;
@@ -74,7 +76,7 @@ where
                 .last()
                 .expect("configurations must be nonempty");
             self.parent_ids.push(start_id);
-            self.nn.insert(end_cfg, new_id);
+            self.nn.insert(end_cfg, new_id, space);
             if goal.is_valid_configuration(end_ref) {
                 return Some(new_id);
             }
@@ -83,8 +85,8 @@ where
         None
     }
 
-    pub fn grow_toward<SS, G, TC: TimeoutCondition, RNG: Rng, R>(
-        &mut self,
+    pub fn grow_toward<'a, SS, G, TC: TimeoutCondition, RNG: Rng, R>(
+        &'a mut self,
         space: &SS,
         goal: &G,
         radius: R,
@@ -95,7 +97,9 @@ where
     where
         G: SampleSpace<Configuration = C>,
         SS: Space<Configuration = C, Distance = R>,
+        NN: NearestNeighborsMap<C, usize, SS>,
         R: Clone,
+        C: Clone,
     {
         let mut id = self.grow_help(space, goal, radius, timeout, target_goal_probability, rng)?;
         let mut traj = Vec::new();
