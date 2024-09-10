@@ -7,7 +7,9 @@ pub mod rrt;
 
 pub trait StateSpace {
     type Configuration;
+}
 
+pub trait ConfigurationSpace: StateSpace {
     fn is_valid_configuration(&self, c: &Self::Configuration) -> bool;
     fn is_valid_transition(&self, start: &Self::Configuration, end: &Self::Configuration) -> bool;
 }

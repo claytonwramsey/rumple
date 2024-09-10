@@ -1,8 +1,8 @@
 use rand::{distributions::Uniform, prelude::Distribution, Rng};
 
-use crate::{MetricSpace, NearestNeighborsMap, SampleSpace, TimeoutCondition};
+use crate::{ConfigurationSpace, MetricSpace, NearestNeighborsMap, SampleSpace, TimeoutCondition};
 
-pub trait Space: SampleSpace + MetricSpace {
+pub trait Space: SampleSpace + MetricSpace + ConfigurationSpace {
     fn grow_toward(
         &self,
         start: &Self::Configuration,
@@ -33,7 +33,7 @@ impl<C, NN> Rrt<C, NN> {
         nn.insert(root.clone(), 0, space);
         Rrt {
             configurations: vec![root],
-            parent_ids: vec![0],
+            parent_ids: vec![usize::MAX],
             nn,
         }
     }
@@ -56,7 +56,8 @@ impl<C, NN> Rrt<C, NN> {
     {
         let distn = Uniform::new(0.0, 1.0);
         while !timeout.is_over() {
-            let target = if distn.sample(rng) < target_goal_probability {
+            let sample_goal = distn.sample(rng) < target_goal_probability;
+            let target = if sample_goal {
                 goal.sample(rng)
             } else {
                 space.sample(rng)
@@ -71,13 +72,9 @@ impl<C, NN> Rrt<C, NN> {
             }
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
-            let end_ref = self
-                .configurations
-                .last()
-                .expect("configurations must be nonempty");
             self.parent_ids.push(start_id);
             self.nn.insert(end_cfg, new_id, space);
-            if goal.is_valid_configuration(end_ref) {
+            if sample_goal {
                 return Some(new_id);
             }
         }
