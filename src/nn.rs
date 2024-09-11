@@ -286,4 +286,11 @@ mod tests {
             Some((&cvpoint([-0.5, 0.5]), &()))
         );
     }
+
+    #[test]
+    fn make_rrt() {
+        use crate::rrt::Rrt;
+        let map = KdTreeMap::new(SquaredEuclidean);
+        let rrt = Rrt::new(cvpoint([0.0]), map);
+    }
 }

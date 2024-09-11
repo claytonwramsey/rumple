@@ -22,11 +22,10 @@ pub struct Rrt<C, NN> {
     nn: NN,
 }
 
-/// Secret internal struct that can be used as a value in a nearest-neighbors map.
-struct Node(usize);
+pub struct Node(usize);
 
 impl<C, NN> Rrt<C, NN> {
-    pub fn new<M>(root: C, mut nn: NN) -> Self
+    pub fn new(root: C, mut nn: NN) -> Self
     where
         NN: NearestNeighborsMap<C, Node>,
         C: Clone,
