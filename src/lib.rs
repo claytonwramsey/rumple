@@ -1,21 +1,16 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
-use rand::Rng;
-
 pub mod nn;
 pub mod rrt;
 
-pub trait StateSpace {
+pub trait ConfigurationSpace {
     type Configuration;
-}
-
-pub trait ConfigurationSpace: StateSpace {
     fn is_valid_configuration(&self, c: &Self::Configuration) -> bool;
     fn is_valid_transition(&self, start: &Self::Configuration, end: &Self::Configuration) -> bool;
 }
 
-pub trait SampleSpace: StateSpace {
-    fn sample<R: Rng>(&self, rng: &mut R) -> Self::Configuration;
+pub trait Sample<C, RNG> {
+    fn sample(&self, rng: &mut RNG) -> C;
 }
 
 pub trait TimeoutCondition {
@@ -24,27 +19,23 @@ pub trait TimeoutCondition {
     fn update_sample_count(&mut self, _n: usize) {}
 }
 
-pub trait Problem<SS: StateSpace> {
-    fn start(&self) -> &SS::Configuration;
-    fn sample_goal(&self) -> SS::Configuration;
+pub trait Problem {
+    type Configuration;
+
+    fn start(&self) -> &Self::Configuration;
+    fn sample_goal(&self) -> Self::Configuration;
 }
 
-pub trait MetricSpace: StateSpace {
+pub trait Metric<C> {
     type Distance: Ord;
 
-    fn distance(&self, c1: &Self::Configuration, c2: &Self::Configuration) -> Self::Distance;
+    fn distance(&self, c1: &C, c2: &C) -> Self::Distance;
     fn is_zero(&self, dist: &Self::Distance) -> bool;
 }
 
-pub trait NearestNeighborsMap<K, V, M>
-where
-    M: MetricSpace<Configuration = K>,
-{
-    fn empty() -> Self;
+pub trait NearestNeighborsMap<K, V, M> {
     /// Insert a key into the map.
-    /// `metric` must be consistent across calls to this function.
-    fn insert(&mut self, key: K, value: V, metric: &M);
+    fn insert(&mut self, key: K, value: V);
     /// Get the nearest element of the space to this key.
-    /// `metric` must be consistent across calls to this function.
-    fn nearest<'q>(&'q self, key: &K, metric: &M) -> Option<(&'q K, &'q V)>;
+    fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)>;
 }

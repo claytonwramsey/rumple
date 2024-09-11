@@ -1,8 +1,8 @@
-use rand::{distributions::Uniform, prelude::Distribution, Rng};
+use crate::{ConfigurationSpace, NearestNeighborsMap, Sample, TimeoutCondition};
 
-use crate::{ConfigurationSpace, MetricSpace, NearestNeighborsMap, SampleSpace, TimeoutCondition};
+pub trait Space: ConfigurationSpace {
+    type Distance;
 
-pub trait Space: SampleSpace + MetricSpace + ConfigurationSpace {
     fn grow_toward(
         &self,
         start: &Self::Configuration,
@@ -16,64 +16,65 @@ pub struct Rrt<C, NN> {
     /// configurations[0] is the root
     configurations: Vec<C>,
     /// ids for each configuration
-    /// parent_ids[0] is ignorable
+    /// `parent_ids[0]` is ignorable
     parent_ids: Vec<usize>,
     /// The nearest neighbors lookup.
     nn: NN,
 }
 
 impl<C, NN> Rrt<C, NN> {
-    pub fn new<SS>(root: C, space: &SS) -> Self
+    pub fn new<M>(root: C, mut nn: NN) -> Self
     where
-        NN: NearestNeighborsMap<C, usize, SS>,
+        NN: NearestNeighborsMap<C, usize, M>,
         C: Clone,
-        SS: MetricSpace<Configuration = C>,
     {
-        let mut nn = NN::empty();
-        nn.insert(root.clone(), 0, space);
-        Rrt {
+        nn.insert(root.clone(), 0);
+        Self {
             configurations: vec![root],
             parent_ids: vec![usize::MAX],
             nn,
         }
     }
 
-    fn grow_help<'a, SS, G, TC: TimeoutCondition, RNG: Rng, R>(
-        &'a mut self,
+    #[allow(clippy::too_many_arguments)]
+    fn grow_help<SS, SP, G, TC: TimeoutCondition, TG, RNG, M, R>(
+        &mut self,
         space: &SS,
+        space_sampler: &SP,
         goal: &G,
         radius: R,
         timeout: &TC,
-        target_goal_probability: f32,
+        target_goal_distn: &TG,
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        G: SampleSpace<Configuration = C>,
         SS: Space<Configuration = C, Distance = R>,
-        NN: NearestNeighborsMap<C, usize, SS>,
+        SP: Sample<C, RNG>,
+        G: Sample<C, RNG>,
+        NN: NearestNeighborsMap<C, usize, M>,
         R: Clone,
         C: Clone,
+        TG: Sample<bool, RNG>,
     {
-        let distn = Uniform::new(0.0, 1.0);
         while !timeout.is_over() {
-            let sample_goal = distn.sample(rng) < target_goal_probability;
+            let sample_goal = target_goal_distn.sample(rng);
             let target = if sample_goal {
                 goal.sample(rng)
             } else {
-                space.sample(rng)
+                space_sampler.sample(rng)
             };
             let (start_cfg, &start_id) = self
                 .nn
-                .nearest(&target, space)
+                .nearest(&target)
                 .expect("NN must always have elements");
             let end_cfg = space.grow_toward(start_cfg, &target, radius.clone());
-            if !space.is_valid_transition(&start_cfg, &end_cfg) {
+            if !space.is_valid_transition(start_cfg, &end_cfg) {
                 continue;
             }
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
             self.parent_ids.push(start_id);
-            self.nn.insert(end_cfg, new_id, space);
+            self.nn.insert(end_cfg, new_id);
             if sample_goal {
                 return Some(new_id);
             }
@@ -82,23 +83,36 @@ impl<C, NN> Rrt<C, NN> {
         None
     }
 
-    pub fn grow_toward<'a, SS, G, TC: TimeoutCondition, RNG: Rng, R>(
-        &'a mut self,
+    #[allow(clippy::too_many_arguments)]
+    pub fn grow_toward<SS, SP, G, TC, TG, M, R, RNG>(
+        &mut self,
         space: &SS,
+        space_sampler: &SP,
         goal: &G,
         radius: R,
         timeout: &TC,
-        target_goal_probability: f32,
+        target_goal_distn: &TG,
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        G: SampleSpace<Configuration = C>,
         SS: Space<Configuration = C, Distance = R>,
-        NN: NearestNeighborsMap<C, usize, SS>,
+        SP: Sample<C, RNG>,
+        G: Sample<C, RNG>,
+        TG: Sample<bool, RNG>,
+        TC: TimeoutCondition,
+        NN: NearestNeighborsMap<C, usize, M>,
         R: Clone,
         C: Clone,
     {
-        let mut id = self.grow_help(space, goal, radius, timeout, target_goal_probability, rng)?;
+        let mut id = self.grow_help(
+            space,
+            space_sampler,
+            goal,
+            radius,
+            timeout,
+            target_goal_distn,
+            rng,
+        )?;
         let mut traj = Vec::new();
         while id != 0 {
             traj.push(self.configurations[id].clone());
