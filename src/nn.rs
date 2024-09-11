@@ -52,7 +52,7 @@ impl<K, V, M> KdTreeMap<K, V, M> {
     }
 }
 
-impl<K, V, M> NearestNeighborsMap<K, V, M> for KdTreeMap<K, V, M>
+impl<K, V, M> NearestNeighborsMap<K, V> for KdTreeMap<K, V, M>
 where
     M: RegionMetric<K>,
     K: Clone,

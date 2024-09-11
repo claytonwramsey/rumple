@@ -33,7 +33,7 @@ pub trait Metric<C> {
     fn is_zero(&self, dist: &Self::Distance) -> bool;
 }
 
-pub trait NearestNeighborsMap<K, V, M> {
+pub trait NearestNeighborsMap<K, V> {
     /// Insert a key into the map.
     fn insert(&mut self, key: K, value: V);
     /// Get the nearest element of the space to this key.

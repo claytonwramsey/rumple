@@ -22,13 +22,16 @@ pub struct Rrt<C, NN> {
     nn: NN,
 }
 
+/// Secret internal struct that can be used as a value in a nearest-neighbors map.
+struct Node(usize);
+
 impl<C, NN> Rrt<C, NN> {
     pub fn new<M>(root: C, mut nn: NN) -> Self
     where
-        NN: NearestNeighborsMap<C, usize, M>,
+        NN: NearestNeighborsMap<C, Node>,
         C: Clone,
     {
-        nn.insert(root.clone(), 0);
+        nn.insert(root.clone(), Node(0));
         Self {
             configurations: vec![root],
             parent_ids: vec![usize::MAX],
@@ -37,7 +40,7 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn grow_help<SS, SP, G, TC: TimeoutCondition, TG, RNG, M, R>(
+    fn grow_help<SS, SP, G, TC: TimeoutCondition, TG, RNG, R>(
         &mut self,
         space: &SS,
         space_sampler: &SP,
@@ -51,7 +54,7 @@ impl<C, NN> Rrt<C, NN> {
         SS: Space<Configuration = C, Distance = R>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
-        NN: NearestNeighborsMap<C, usize, M>,
+        NN: NearestNeighborsMap<C, Node>,
         R: Clone,
         C: Clone,
         TG: Sample<bool, RNG>,
@@ -63,7 +66,7 @@ impl<C, NN> Rrt<C, NN> {
             } else {
                 space_sampler.sample(rng)
             };
-            let (start_cfg, &start_id) = self
+            let (start_cfg, &Node(start_id)) = self
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
@@ -74,7 +77,7 @@ impl<C, NN> Rrt<C, NN> {
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
             self.parent_ids.push(start_id);
-            self.nn.insert(end_cfg, new_id);
+            self.nn.insert(end_cfg, Node(new_id));
             if sample_goal {
                 return Some(new_id);
             }
@@ -84,7 +87,7 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn grow_toward<SS, SP, G, TC, TG, M, R, RNG>(
+    pub fn grow_toward<SS, SP, G, TC, TG, R, RNG>(
         &mut self,
         space: &SS,
         space_sampler: &SP,
@@ -100,7 +103,7 @@ impl<C, NN> Rrt<C, NN> {
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,
         TC: TimeoutCondition,
-        NN: NearestNeighborsMap<C, usize, M>,
+        NN: NearestNeighborsMap<C, Node>,
         R: Clone,
         C: Clone,
     {
