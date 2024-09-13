@@ -22,7 +22,11 @@ pub struct Rrt<C, NN> {
     nn: NN,
 }
 
-pub struct Node(usize);
+/// Workaround module to avoid exposing implementation details of `Node` to consumers.
+mod private {
+    pub struct Node(pub usize);
+}
+use private::Node;
 
 impl<C, NN> Rrt<C, NN> {
     pub fn new(root: C, mut nn: NN) -> Self
