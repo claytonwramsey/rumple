@@ -1,7 +1,2 @@
-[package]
-name = "rumple"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-ordered-float = "4.2.2"
+[workspace]
+members = ["rumple"]
