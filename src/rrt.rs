@@ -1,6 +1,7 @@
-use crate::{ConfigurationSpace, NearestNeighborsMap, Sample, TimeoutCondition};
+use crate::{NearestNeighborsMap, Sample, Timeout, Validate};
 
-pub trait Space: ConfigurationSpace {
+pub trait Grow {
+    type Configuration;
     type Distance;
 
     fn grow_toward(
@@ -43,18 +44,20 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn grow_help<SS, SP, G, TC: TimeoutCondition, TG, RNG, R>(
+    fn grow_help<GR, V, SP, G, TC: Timeout, TG, RNG, R>(
         &mut self,
-        space: &SS,
+        grow: &GR,
+        valid: &V,
         space_sampler: &SP,
         goal: &G,
         radius: R,
-        timeout: &TC,
+        timeout: &mut TC,
         target_goal_distn: &TG,
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        SS: Space<Configuration = C, Distance = R>,
+        GR: Grow<Configuration = C, Distance = R>,
+        V: Validate<Configuration = C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         NN: NearestNeighborsMap<C, Node>,
@@ -63,6 +66,7 @@ impl<C, NN> Rrt<C, NN> {
         TG: Sample<bool, RNG>,
     {
         while !timeout.is_over() {
+            timeout.update_sample_count(1);
             let sample_goal = target_goal_distn.sample(rng);
             let target = if sample_goal {
                 goal.sample(rng)
@@ -73,8 +77,8 @@ impl<C, NN> Rrt<C, NN> {
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
-            let end_cfg = space.grow_toward(start_cfg, &target, radius.clone());
-            if !space.is_valid_transition(start_cfg, &end_cfg) {
+            let end_cfg = grow.grow_toward(start_cfg, &target, radius.clone());
+            if !valid.is_valid_transition(start_cfg, &end_cfg) {
                 continue;
             }
             let new_id = self.configurations.len();
@@ -90,28 +94,31 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn grow_toward<SS, SP, G, TC, TG, R, RNG>(
+    pub fn grow_toward<GR, V, SP, G, TC, TG, R, RNG>(
         &mut self,
-        space: &SS,
+        grow: &GR,
+        valid: &V,
         space_sampler: &SP,
         goal: &G,
         radius: R,
-        timeout: &TC,
+        timeout: &mut TC,
         target_goal_distn: &TG,
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        SS: Space<Configuration = C, Distance = R>,
+        GR: Grow<Configuration = C, Distance = R>,
+        V: Validate<Configuration = C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,
-        TC: TimeoutCondition,
+        TC: Timeout,
         NN: NearestNeighborsMap<C, Node>,
         R: Clone,
         C: Clone,
     {
         let mut id = self.grow_help(
-            space,
+            grow,
+            valid,
             space_sampler,
             goal,
             radius,

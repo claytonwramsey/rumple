@@ -1,9 +1,13 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
+pub mod metric;
 pub mod nn;
 pub mod rrt;
+pub mod space;
 
-pub trait ConfigurationSpace {
+pub mod time;
+
+pub trait Validate {
     type Configuration;
     fn is_valid_configuration(&self, c: &Self::Configuration) -> bool;
     fn is_valid_transition(&self, start: &Self::Configuration, end: &Self::Configuration) -> bool;
@@ -13,17 +17,10 @@ pub trait Sample<C, RNG> {
     fn sample(&self, rng: &mut RNG) -> C;
 }
 
-pub trait TimeoutCondition {
+pub trait Timeout {
     fn is_over(&self) -> bool;
 
     fn update_sample_count(&mut self, _n: usize) {}
-}
-
-pub trait Problem {
-    type Configuration;
-
-    fn start(&self) -> &Self::Configuration;
-    fn sample_goal(&self) -> Self::Configuration;
 }
 
 pub trait Metric<C> {

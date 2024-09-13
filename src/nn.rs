@@ -171,86 +171,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::f64;
-
-    use crate::{Metric, NearestNeighborsMap};
-    use ordered_float::NotNan;
-
-    use super::{KdTreeMap, Region, RegionMetric};
-
-    type RealVector<const N: usize> = [NotNan<f64>; N];
-
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    struct SquaredEuclidean;
-
-    impl<const N: usize> Metric<RealVector<N>> for SquaredEuclidean {
-        type Distance = NotNan<f64>;
-
-        fn distance(&self, c1: &RealVector<N>, c2: &RealVector<N>) -> Self::Distance {
-            c1.iter()
-                .zip(c2.iter())
-                .map(|(&a, &b)| (a - b) * (a - b))
-                .sum()
-        }
-
-        fn is_zero(&self, dist: &Self::Distance) -> bool {
-            *dist == 0.0
-        }
-    }
-
-    impl<const N: usize> RegionMetric<RealVector<N>> for SquaredEuclidean {
-        fn compare(&self, c0: &RealVector<N>, c1: &RealVector<N>, k: usize) -> std::cmp::Ordering {
-            c0[k].cmp(&c1[k])
-        }
-
-        fn dimension(&self) -> usize {
-            N
-        }
-
-        fn set_dim(&self, dest: &mut RealVector<N>, src: &RealVector<N>, k: usize) {
-            dest[k] = src[k];
-        }
-
-        fn whole_space(&self) -> Region<RealVector<N>> {
-            Region {
-                lo: [NotNan::new(f64::NEG_INFINITY).unwrap(); N],
-                hi: [NotNan::new(f64::INFINITY).unwrap(); N],
-            }
-        }
-
-        fn dist_to_region(
-            &self,
-            point: &RealVector<N>,
-            region: &Region<RealVector<N>>,
-        ) -> Self::Distance {
-            point
-                .iter()
-                .zip(&region.lo)
-                .zip(&region.hi)
-                .map(|((p, l), h)| {
-                    if p < l {
-                        l - p
-                    } else if h < p {
-                        p - h
-                    } else {
-                        NotNan::new(0.0).unwrap()
-                    }
-                })
-                .map(|d| d * d)
-                .sum()
-        }
-    }
-
-    fn cvpoint<const N: usize>(point: [f64; N]) -> [NotNan<f64>; N] {
-        point.map(|x| NotNan::new(x).unwrap())
-    }
+    use super::*;
+    use crate::metric::SquaredEuclidean;
+    use crate::space::RealVector;
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
-    ) -> KdTreeMap<RealVector<N>, (), SquaredEuclidean> {
+    ) -> KdTreeMap<RealVector<f64, N>, (), SquaredEuclidean> {
         let mut t = KdTreeMap::new(SquaredEuclidean);
         for &point in points {
-            t.insert(cvpoint(point), ());
+            t.insert(RealVector::from_floats(point), ());
         }
         t
     }
@@ -265,15 +195,15 @@ mod tests {
     #[test]
     fn get_empty() {
         let t = build_tree(&[]);
-        assert_eq!(t.nearest(&[NotNan::new(0.0).unwrap(); 2]), None);
+        assert_eq!(t.nearest(&RealVector::from_floats([0.0, 0.0])), None);
     }
 
     #[test]
     fn get_one() {
         let t = build_tree(&[[1.0, 1.0]]);
         assert_eq!(
-            t.nearest(&cvpoint([0.0; 2])),
-            Some((&cvpoint([1.0, 1.0]), &()))
+            t.nearest(&RealVector::from_floats([0.0, 0.0])),
+            Some((&RealVector::from_floats([1.0, 1.0]), &()))
         );
     }
 
@@ -282,15 +212,17 @@ mod tests {
         let t = build_tree(&[[1.0, 1.0], [1.5, 1.1], [-0.5, 0.5]]);
         println!("{t:?}");
         assert_eq!(
-            t.nearest(&cvpoint([0.0; 2])),
-            Some((&cvpoint([-0.5, 0.5]), &()))
+            t.nearest(&RealVector::from_floats([1.0, 1.0])),
+            Some((&RealVector::from_floats([-0.5, -0.5]), &()))
         );
     }
 
     #[test]
     fn make_rrt() {
         use crate::rrt::Rrt;
-        let map = KdTreeMap::new(SquaredEuclidean);
-        let rrt = Rrt::new(cvpoint([0.0]), map);
+        let _rrt = Rrt::new(
+            RealVector::from_floats([0.0]),
+            KdTreeMap::new(SquaredEuclidean),
+        );
     }
 }
