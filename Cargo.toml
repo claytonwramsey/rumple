@@ -1,2 +1,3 @@
 [workspace]
-members = ["rumple"]
+members = ["rumple", "examples"]
+resolver = "2"

@@ -1,16 +1,4 @@
-use crate::{NearestNeighborsMap, Sample, Timeout, Validate};
-
-pub trait Grow {
-    type Configuration;
-    type Distance;
-
-    fn grow_toward(
-        &self,
-        start: &Self::Configuration,
-        end: &Self::Configuration,
-        radius: Self::Distance,
-    ) -> Self::Configuration;
-}
+use crate::{Grow, NearestNeighborsMap, Sample, Timeout, Validate};
 
 pub struct Rrt<C, NN> {
     /// buffer of saved configurations
@@ -56,8 +44,8 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        GR: Grow<Configuration = C, Distance = R>,
-        V: Validate<Configuration = C>,
+        GR: Grow<C, Distance = R>,
+        V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         NN: NearestNeighborsMap<C, Node>,
@@ -69,8 +57,10 @@ impl<C, NN> Rrt<C, NN> {
             timeout.update_sample_count(1);
             let sample_goal = target_goal_distn.sample(rng);
             let target = if sample_goal {
+                println!("sample goal!");
                 goal.sample(rng)
             } else {
+                println!("do not sample goal!");
                 space_sampler.sample(rng)
             };
             let (start_cfg, &Node(start_id)) = self
@@ -106,8 +96,8 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        GR: Grow<Configuration = C, Distance = R>,
-        V: Validate<Configuration = C>,
+        GR: Grow<C, Distance = R>,
+        V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,

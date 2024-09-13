@@ -4,6 +4,8 @@ use crate::Timeout;
 
 pub struct Alarm(Instant);
 
+pub struct Forever;
+
 impl Alarm {
     #[must_use]
     #[expect(clippy::missing_const_for_fn)]
@@ -25,5 +27,11 @@ impl Alarm {
 impl Timeout for Alarm {
     fn is_over(&self) -> bool {
         Instant::now() >= self.0
+    }
+}
+
+impl Timeout for Forever {
+    fn is_over(&self) -> bool {
+        false
     }
 }

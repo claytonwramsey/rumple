@@ -10,13 +10,13 @@ use ordered_float::{FloatCore, NotNan};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SquaredEuclidean;
 
-impl<T, const N: usize> Metric<RealVector<T, N>> for SquaredEuclidean
+impl<T, const N: usize> Metric<RealVector<N, T>> for SquaredEuclidean
 where
     T: FloatCore + Sum,
 {
     type Distance = NotNan<T>;
 
-    fn distance(&self, c1: &RealVector<T, N>, c2: &RealVector<T, N>) -> Self::Distance {
+    fn distance(&self, c1: &RealVector<N, T>, c2: &RealVector<N, T>) -> Self::Distance {
         c1.iter()
             .zip(c2.iter())
             .map(|(&a, &b)| (a - b) * (a - b))
@@ -28,14 +28,14 @@ where
     }
 }
 
-impl<T, const N: usize> RegionMetric<RealVector<T, N>> for SquaredEuclidean
+impl<T, const N: usize> RegionMetric<RealVector<N, T>> for SquaredEuclidean
 where
     T: FloatCore + Sum,
 {
     fn compare(
         &self,
-        c0: &RealVector<T, N>,
-        c1: &RealVector<T, N>,
+        c0: &RealVector<N, T>,
+        c1: &RealVector<N, T>,
         k: usize,
     ) -> std::cmp::Ordering {
         c0[k].cmp(&c1[k])
@@ -45,11 +45,11 @@ where
         N
     }
 
-    fn set_dim(&self, dest: &mut RealVector<T, N>, src: &RealVector<T, N>, k: usize) {
+    fn set_dim(&self, dest: &mut RealVector<N, T>, src: &RealVector<N, T>, k: usize) {
         dest[k] = src[k];
     }
 
-    fn whole_space(&self) -> Region<RealVector<T, N>> {
+    fn whole_space(&self) -> Region<RealVector<N, T>> {
         Region {
             lo: RealVector::new([NotNan::new(T::neg_infinity()).unwrap(); N]),
             hi: RealVector::new([NotNan::new(T::infinity()).unwrap(); N]),
@@ -58,8 +58,8 @@ where
 
     fn dist_to_region(
         &self,
-        point: &RealVector<T, N>,
-        region: &Region<RealVector<T, N>>,
+        point: &RealVector<N, T>,
+        region: &Region<RealVector<N, T>>,
     ) -> Self::Distance {
         (**point)
             .iter()

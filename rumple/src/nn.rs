@@ -172,8 +172,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::metric::SquaredEuclidean;
-    use crate::space::RealVector;
+    use crate::{metric::SquaredEuclidean, space::RealVector};
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
@@ -213,7 +212,7 @@ mod tests {
         println!("{t:?}");
         assert_eq!(
             t.nearest(&RealVector::from_floats([1.0, 1.0])),
-            Some((&RealVector::from_floats([-0.5, -0.5]), &()))
+            Some((&RealVector::from_floats([-0.5, 0.5]), &()))
         );
     }
 
