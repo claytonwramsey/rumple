@@ -31,6 +31,19 @@ mod alarm {
             Instant::now() >= self.0
         }
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn fifty_millis() {
+            let alarm = Alarm::from_now(Duration::from_millis(50));
+            assert!(!alarm.is_over());
+            std::thread::sleep(Duration::from_millis(50));
+            assert!(alarm.is_over());
+        }
+    }
 }
 
 #[cfg(feature = "std")]
