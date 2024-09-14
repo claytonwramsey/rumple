@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
-
 use crate::{Metric, NearestNeighborsMap};
+use alloc::boxed::Box;
+use core::cmp::Ordering;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KdTreeMap<K, V, M> {
@@ -187,8 +187,7 @@ mod tests {
     #[test]
     fn make_tree() {
         let points = [[0.0, 0.0], [0.5, 0.5]];
-        let t = build_tree(&points);
-        println!("{t:?}");
+        let _ = build_tree(&points);
     }
 
     #[test]
@@ -209,7 +208,7 @@ mod tests {
     #[test]
     fn across_border() {
         let t = build_tree(&[[1.0, 1.0], [1.5, 1.1], [-0.5, 0.5]]);
-        println!("{t:?}");
+        // println!("{t:?}");
         assert_eq!(
             t.nearest(&RealVector::from_floats([0.0, 0.0])),
             Some((&RealVector::from_floats([-0.5, 0.5]), &()))
@@ -219,7 +218,7 @@ mod tests {
     #[test]
     fn make_rrt() {
         use crate::geo::Rrt;
-        let _rrt = Rrt::new(
+        let _rrt = Rrt::<RealVector<1>, _>::new(
             RealVector::from_floats([0.0]),
             KdTreeMap::new(SquaredEuclidean),
         );

@@ -1,7 +1,7 @@
-use std::array;
+use core::array;
 
 use crate::{space::RealVector, Sample};
-use num_traits::Float;
+use num_traits::float::FloatCore;
 use rand::{
     distributions::{Bernoulli, Distribution, Standard},
     Rng,
@@ -17,7 +17,7 @@ pub struct Everywhere;
 
 impl<RNG: Rng, const N: usize, T> Sample<RealVector<N, T>, RNG> for Everywhere
 where
-    T: Float,
+    T: FloatCore,
     Standard: Distribution<T>,
 {
     fn sample(&self, rng: &mut RNG) -> RealVector<N, T> {

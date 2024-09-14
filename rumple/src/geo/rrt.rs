@@ -1,4 +1,5 @@
 use crate::{Interpolate, NearestNeighborsMap, Sample, Timeout, Validate};
+use alloc::vec::Vec;
 
 pub struct Rrt<C, NN> {
     /// buffer of saved configurations

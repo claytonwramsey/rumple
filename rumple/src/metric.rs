@@ -4,14 +4,14 @@ use crate::{
     space::RealVector,
     Metric,
 };
-use num_traits::Float;
+use num_traits::float::FloatCore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SquaredEuclidean;
 
 impl<T, const N: usize> Metric<RealVector<N, T>> for SquaredEuclidean
 where
-    T: Float,
+    T: FloatCore,
 {
     type Distance = Real<T>;
 
@@ -29,14 +29,14 @@ where
 
 impl<T, const N: usize> RegionMetric<RealVector<N, T>> for SquaredEuclidean
 where
-    T: Float,
+    T: FloatCore,
 {
     fn compare(
         &self,
         c0: &RealVector<N, T>,
         c1: &RealVector<N, T>,
         k: usize,
-    ) -> std::cmp::Ordering {
+    ) -> core::cmp::Ordering {
         c0[k].cmp(&c1[k])
     }
 

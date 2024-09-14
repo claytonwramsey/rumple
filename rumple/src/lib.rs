@@ -1,4 +1,8 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::pedantic, clippy::nursery)]
+
+#[macro_use]
+extern crate alloc;
 
 pub mod float;
 pub mod geo;

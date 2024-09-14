@@ -1,10 +1,10 @@
 use crate::{float::Real, metric::SquaredEuclidean, Interpolate, Metric, Sample};
-use num_traits::Float;
-use std::{
+use core::{
     array,
     ops::{Deref, DerefMut, Sub},
     ptr::addr_of,
 };
+use num_traits::float::FloatCore;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[expect(clippy::module_name_repetitions)]
@@ -22,7 +22,7 @@ impl<T, const N: usize> RealVector<N, T> {
     /// This function will panic of any element of `x` is `NaN`.
     pub fn from_floats(x: [T; N]) -> Self
     where
-        T: Float,
+        T: FloatCore,
     {
         Self(x.map(|v| Real::new(v)))
     }
@@ -64,7 +64,7 @@ impl<T, const N: usize> From<[Real<T>; N]> for RealVector<N, T> {
 
 impl<const N: usize, T> Interpolate for RealVector<N, T>
 where
-    T: Float,
+    T: FloatCore,
 {
     type Distance = Real<T>;
 
@@ -75,9 +75,7 @@ where
         } else {
             let scl = radius / dist;
             let inv_scl = Real::new(T::one()) - scl;
-            Err(Self(array::from_fn(|i| {
-                inv_scl * self[i] + scl * end[i]
-            })))
+            Err(Self(array::from_fn(|i| inv_scl * self[i] + scl * end[i])))
         }
     }
 }
@@ -91,7 +89,7 @@ where
     }
 }
 
-impl<const N: usize, T: Sub<Output = T> + Float> Sub for RealVector<N, T> {
+impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for RealVector<N, T> {
     type Output = Self;
     fn sub(mut self, rhs: Self) -> Self::Output {
         for (a, b) in self.iter_mut().zip(rhs.into_iter()) {
@@ -112,7 +110,6 @@ mod tests {
         let dist = Real::new(0.05);
         let z_expected = RealVector::from_floats([0.05]);
         let z = x.interpolate(&y, dist).unwrap_err();
-        println!("{z:?}");
         assert!((z - z_expected)[0].abs().into_inner() <= 0.001);
     }
 }

@@ -1,10 +1,11 @@
-use std::{
+use core::{
+    cmp::Ordering,
     fmt::Debug,
     iter::Sum,
     ops::{Add, Div, Mul, Sub},
 };
 
-use num_traits::Float;
+use num_traits::float::FloatCore;
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Hash)]
@@ -24,7 +25,7 @@ impl<T> Real<T> {
     }
 }
 
-impl<T: Float> Real<T> {
+impl<T: FloatCore> Real<T> {
     /// # Panics
     ///
     /// This function will panic if `x` is non-finite.
@@ -43,28 +44,28 @@ impl<T: Float> Real<T> {
     }
 }
 
-impl<T: Float> Sub for Real<T> {
+impl<T: FloatCore> Sub for Real<T> {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         Self(self.0 - rhs.0)
     }
 }
 
-impl<T: Float> Mul for Real<T> {
+impl<T: FloatCore> Mul for Real<T> {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
         Self(self.0 * rhs.0)
     }
 }
 
-impl<T: Float> Add for Real<T> {
+impl<T: FloatCore> Add for Real<T> {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
         Self(self.0 + rhs.0)
     }
 }
 
-impl<T: Float> Div for Real<T> {
+impl<T: FloatCore> Div for Real<T> {
     type Output = Self;
     fn div(self, rhs: Self) -> Self::Output {
         assert!(!rhs.is_zero(), "cannot divide by zero");
@@ -73,26 +74,26 @@ impl<T: Float> Div for Real<T> {
 }
 
 impl<T: Debug> Debug for Real<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl<T: Float> Eq for Real<T> {}
+impl<T: FloatCore> Eq for Real<T> {}
 
-impl<T: Float> PartialOrd for Real<T> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+impl<T: FloatCore> PartialOrd for Real<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<T: Float> Ord for Real<T> {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+impl<T: FloatCore> Ord for Real<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
         unsafe { self.0.partial_cmp(&other.0).unwrap_unchecked() }
     }
 }
 
-impl<T: Float> Sum for Real<T> {
+impl<T: FloatCore> Sum for Real<T> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut total = T::zero();
         for x in iter {
@@ -102,4 +103,4 @@ impl<T: Float> Sum for Real<T> {
     }
 }
 
-impl<T: Float> Eq for Ordered<T> {}
+impl<T: FloatCore> Eq for Ordered<T> {}
