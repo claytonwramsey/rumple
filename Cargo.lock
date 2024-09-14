@@ -24,7 +24,6 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "examples"
 version = "0.1.0"
 dependencies = [
- "ordered-float",
  "rand",
  "rand_chacha",
  "rumple",
@@ -54,15 +53,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "ordered-float"
-version = "4.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a91171844676f8c7990ce64959210cd2eaef32c2612c50f9fae9f8aaa6065a6"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
@@ -127,7 +117,6 @@ name = "rumple"
 version = "0.1.0"
 dependencies = [
  "num-traits",
- "ordered-float",
  "rand",
 ]
 
