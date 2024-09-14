@@ -1,14 +1,8 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    float::R64,
-    geo::Rrt,
-    metric::SquaredEuclidean,
-    nn::KdTreeMap,
-    sample::Everywhere,
-    space::{LinearInterpolate, RealVector},
-    time::Forever,
-    AlwaysValid, Metric,
+    float::R64, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Everywhere,
+    space::RealVector, time::Forever, AlwaysValid, Metric,
 };
 
 fn main() {
@@ -19,7 +13,6 @@ fn main() {
     let radius = R64::new(0.05);
     let res = rrt
         .grow_toward(
-            &LinearInterpolate,
             &AlwaysValid,
             &Everywhere,
             &RealVector::from_floats([1.0, 1.0]),

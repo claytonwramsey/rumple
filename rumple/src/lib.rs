@@ -49,13 +49,13 @@ pub trait NearestNeighborsMap<K, V> {
     fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)>;
 }
 
-pub trait Interpolate<C> {
+pub trait Interpolate: Sized {
     type Distance;
 
     #[expect(clippy::missing_errors_doc)]
-    /// Attempt to grow from `start` to `goal`.
+    /// Attempt to grow from `self` to `goal`.
     ///
-    /// Returns `Ok(end)` if `start` and `end` are within `radius` of one another.
-    /// Returns `Err(x)`, where `x` is within `radius` distance of `start` but along the direction toward `goal`.
-    fn interpolate(&self, start: &C, end: &C, radius: Self::Distance) -> Result<C, C>;
+    /// Returns `Ok(end)` if `self` and `end` are within `radius` of one another.
+    /// Returns `Err(x)`, where `x` is within `radius` distance of `self` but along the direction toward `end`.
+    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self>;
 }

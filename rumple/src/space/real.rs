@@ -1,6 +1,4 @@
-use crate::{
-    float::Real, metric::SquaredEuclidean, space::LinearInterpolate, Interpolate, Metric, Sample,
-};
+use crate::{float::Real, metric::SquaredEuclidean, Interpolate, Metric, Sample};
 use num_traits::Float;
 use std::{
     array,
@@ -64,26 +62,21 @@ impl<T, const N: usize> From<[Real<T>; N]> for RealVector<N, T> {
     }
 }
 
-impl<const N: usize, T> Interpolate<RealVector<N, T>> for LinearInterpolate
+impl<const N: usize, T> Interpolate for RealVector<N, T>
 where
     T: Float,
 {
     type Distance = Real<T>;
 
-    fn interpolate(
-        &self,
-        start: &RealVector<N, T>,
-        end: &RealVector<N, T>,
-        radius: Self::Distance,
-    ) -> Result<RealVector<N, T>, RealVector<N, T>> {
-        let dist = SquaredEuclidean.distance(start, end);
+    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
+        let dist = SquaredEuclidean.distance(self, end);
         if dist <= radius {
             Ok(*end)
         } else {
             let scl = radius / dist;
             let inv_scl = Real::new(T::one()) - scl;
-            Err(RealVector(array::from_fn(|i| {
-                inv_scl * start[i] + scl * end[i]
+            Err(Self(array::from_fn(|i| {
+                inv_scl * self[i] + scl * end[i]
             })))
         }
     }
@@ -118,7 +111,7 @@ mod tests {
         let y = RealVector::from_floats([1.0]);
         let dist = Real::new(0.05);
         let z_expected = RealVector::from_floats([0.05]);
-        let z = LinearInterpolate.interpolate(&x, &y, dist).unwrap_err();
+        let z = x.interpolate(&y, dist).unwrap_err();
         println!("{z:?}");
         assert!((z - z_expected)[0].abs().into_inner() <= 0.001);
     }

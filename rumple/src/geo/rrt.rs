@@ -18,9 +18,8 @@ mod private {
 use private::Node;
 
 #[allow(clippy::too_many_arguments)]
-pub fn rrt<C, NN, GR, V, SP, G, TC, TG, R, RNG>(
+pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     start: C,
-    grow: &GR,
     valid: &V,
     space_sampler: &SP,
     goal: &G,
@@ -31,18 +30,16 @@ pub fn rrt<C, NN, GR, V, SP, G, TC, TG, R, RNG>(
 ) -> Option<Vec<C>>
 where
     NN: NearestNeighborsMap<C, Node> + Default,
-    GR: Interpolate<C, Distance = R>,
     V: Validate<C>,
     SP: Sample<C, RNG>,
     G: Sample<C, RNG>,
     R: Clone,
-    C: Clone,
+    C: Clone + Interpolate<Distance = R>,
     TC: Timeout,
     TG: Sample<bool, RNG>,
 {
     let mut rrt = Rrt::new(start, NN::default());
     let mut id = rrt.grow_help(
-        grow,
         valid,
         space_sampler,
         goal,
@@ -77,9 +74,8 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn grow_help<GR, V, SP, G, TC: Timeout, TG, RNG, R>(
+    fn grow_help<V, SP, G, TC: Timeout, TG, RNG, R>(
         &mut self,
-        grow: &GR,
         valid: &V,
         space_sampler: &SP,
         goal: &G,
@@ -89,13 +85,12 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        GR: Interpolate<C, Distance = R>,
         V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         NN: NearestNeighborsMap<C, Node>,
         R: Clone,
-        C: Clone,
+        C: Clone + Interpolate<Distance = R>,
         TG: Sample<bool, RNG>,
     {
         while !timeout.is_over() {
@@ -110,7 +105,7 @@ impl<C, NN> Rrt<C, NN> {
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
-            let (reached, end_cfg) = match grow.interpolate(start_cfg, &target, radius.clone()) {
+            let (reached, end_cfg) = match start_cfg.interpolate(&target, radius.clone()) {
                 Ok(c) => (true, c),
                 Err(c) => (false, c),
             };
@@ -135,9 +130,8 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn grow_toward<GR, V, SP, G, TC, TG, R, RNG>(
+    pub fn grow_toward<V, SP, G, TC, TG, R, RNG>(
         &mut self,
-        grow: &GR,
         valid: &V,
         space_sampler: &SP,
         goal: &G,
@@ -147,7 +141,6 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        GR: Interpolate<C, Distance = R>,
         V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
@@ -155,10 +148,9 @@ impl<C, NN> Rrt<C, NN> {
         TC: Timeout,
         NN: NearestNeighborsMap<C, Node>,
         R: Clone,
-        C: Clone,
+        C: Clone + Interpolate<Distance = R>,
     {
         let mut id = self.grow_help(
-            grow,
             valid,
             space_sampler,
             goal,

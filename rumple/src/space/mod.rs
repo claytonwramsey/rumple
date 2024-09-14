@@ -7,5 +7,3 @@ pub use orient::Orient;
 pub use real::RealVector;
 
 pub struct Product<T>(T);
-
-pub struct LinearInterpolate;
