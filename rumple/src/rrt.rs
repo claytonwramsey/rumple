@@ -1,4 +1,4 @@
-use crate::{Grow, NearestNeighborsMap, Sample, Timeout, Validate};
+use crate::{Interpolate, NearestNeighborsMap, Sample, Timeout, Validate};
 
 pub struct Rrt<C, NN> {
     /// buffer of saved configurations
@@ -44,7 +44,7 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        GR: Grow<C, Distance = R>,
+        GR: Interpolate<C, Distance = R>,
         V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
@@ -57,25 +57,31 @@ impl<C, NN> Rrt<C, NN> {
             timeout.update_sample_count(1);
             let sample_goal = target_goal_distn.sample(rng);
             let target = if sample_goal {
-                println!("sample goal!");
                 goal.sample(rng)
             } else {
-                println!("do not sample goal!");
                 space_sampler.sample(rng)
             };
             let (start_cfg, &Node(start_id)) = self
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
-            let end_cfg = grow.grow_toward(start_cfg, &target, radius.clone());
+            let (reached, end_cfg) = match grow.interpolate(start_cfg, &target, radius.clone()) {
+                Ok(c) => (true, c),
+                Err(c) => (false, c),
+            };
             if !valid.is_valid_transition(start_cfg, &end_cfg) {
                 continue;
             }
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
             self.parent_ids.push(start_id);
+            debug_assert_eq!(
+                self.configurations.len(),
+                self.parent_ids.len(),
+                "number of configurations and parents must be equal"
+            );
             self.nn.insert(end_cfg, Node(new_id));
-            if sample_goal {
+            if sample_goal && reached {
                 return Some(new_id);
             }
         }
@@ -96,7 +102,7 @@ impl<C, NN> Rrt<C, NN> {
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        GR: Grow<C, Distance = R>,
+        GR: Interpolate<C, Distance = R>,
         V: Validate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
@@ -124,5 +130,9 @@ impl<C, NN> Rrt<C, NN> {
         traj.push(self.configurations[0].clone());
         traj.reverse();
         Some(traj)
+    }
+
+    pub fn num_nodes(&self) -> usize {
+        self.configurations.len()
     }
 }

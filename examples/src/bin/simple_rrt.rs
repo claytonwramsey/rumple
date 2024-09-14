@@ -5,9 +5,9 @@ use rumple::{
     nn::KdTreeMap,
     rrt::Rrt,
     sample::Everywhere,
-    space::{Interpolate, RealVector},
+    space::{LinearInterpolate, RealVector},
     time::Forever,
-    AlwaysValid,
+    AlwaysValid, Metric,
 };
 
 use ordered_float::NotNan;
@@ -17,18 +17,25 @@ fn main() {
         RealVector::from_floats([0.0, 0.0]),
         KdTreeMap::new(SquaredEuclidean),
     );
+    let radius = NotNan::new(0.05).unwrap();
     let res = rrt
         .grow_toward(
-            &Interpolate,
+            &LinearInterpolate,
             &AlwaysValid,
             &Everywhere,
-            &RealVector::from_floats([10.0, 10.0]),
-            NotNan::new(0.1).unwrap(),
+            &RealVector::from_floats([1.0, 1.0]),
+            radius,
             &mut Forever,
             &Bernoulli::new(0.05).unwrap(),
             &mut ChaCha20Rng::seed_from_u64(2707),
         )
         .unwrap();
 
+    println!("Created {} nodes", rrt.num_nodes());
     println!("{res:?}");
+    assert!(
+        res.windows(2)
+            .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= radius),
+        "all transitions must be within growth radius"
+    );
 }

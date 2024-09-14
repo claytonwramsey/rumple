@@ -176,7 +176,7 @@ mod tests {
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
-    ) -> KdTreeMap<RealVector<f64, N>, (), SquaredEuclidean> {
+    ) -> KdTreeMap<RealVector<N>, (), SquaredEuclidean> {
         let mut t = KdTreeMap::new(SquaredEuclidean);
         for &point in points {
             t.insert(RealVector::from_floats(point), ());
@@ -211,7 +211,7 @@ mod tests {
         let t = build_tree(&[[1.0, 1.0], [1.5, 1.1], [-0.5, 0.5]]);
         println!("{t:?}");
         assert_eq!(
-            t.nearest(&RealVector::from_floats([1.0, 1.0])),
+            t.nearest(&RealVector::from_floats([0.0, 0.0])),
             Some((&RealVector::from_floats([-0.5, 0.5]), &()))
         );
     }

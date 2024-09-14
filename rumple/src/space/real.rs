@@ -1,10 +1,10 @@
-use crate::{metric::SquaredEuclidean, space::Interpolate, Grow, Metric, Sample};
+use crate::{metric::SquaredEuclidean, space::LinearInterpolate, Interpolate, Metric, Sample};
 use num_traits::One;
 use ordered_float::{FloatCore, NotNan};
 use std::{
     array,
     iter::Sum,
-    ops::{Deref, DerefMut},
+    ops::{Deref, DerefMut, Sub},
     ptr::addr_of,
 };
 
@@ -64,23 +64,29 @@ impl<T, const N: usize> From<[NotNan<T>; N]> for RealVector<N, T> {
     }
 }
 
-impl<const N: usize, T> Grow<RealVector<N, T>> for Interpolate
+impl<const N: usize, T> Interpolate<RealVector<N, T>> for LinearInterpolate
 where
     T: Sum + FloatCore,
     NotNan<T>: One,
 {
     type Distance = NotNan<T>;
 
-    fn grow_toward(
+    fn interpolate(
         &self,
         start: &RealVector<N, T>,
         end: &RealVector<N, T>,
         radius: Self::Distance,
-    ) -> RealVector<N, T> {
+    ) -> Result<RealVector<N, T>, RealVector<N, T>> {
         let dist = SquaredEuclidean.distance(start, end);
-        let scl: NotNan<T> = radius / dist;
-        let inv_scl = NotNan::<T>::one() - scl;
-        RealVector(array::from_fn(|i| scl * start[i] + inv_scl * end[i]))
+        if dist <= radius {
+            Ok(*end)
+        } else {
+            let scl: NotNan<T> = radius / dist;
+            let inv_scl = NotNan::<T>::one() - scl;
+            Err(RealVector(array::from_fn(|i| {
+                inv_scl * start[i] + scl * end[i]
+            })))
+        }
     }
 }
 
@@ -90,5 +96,31 @@ where
 {
     fn sample(&self, _: &mut RNG) -> Self {
         self.clone()
+    }
+}
+
+impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for RealVector<N, T> {
+    type Output = Self;
+    fn sub(mut self, rhs: Self) -> Self::Output {
+        for (a, b) in self.iter_mut().zip(rhs.into_iter()) {
+            *a = NotNan::new(a.into_inner() - b.into_inner()).unwrap();
+        }
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interpolate_real() {
+        let x = RealVector::from_floats([0.0]);
+        let y = RealVector::from_floats([1.0]);
+        let dist = NotNan::new(0.05).unwrap();
+        let z_expected = RealVector::from_floats([0.05]);
+        let z = LinearInterpolate.interpolate(&x, &y, dist).unwrap_err();
+        println!("{z:?}");
+        assert!((z - z_expected)[0].abs() <= 0.001);
     }
 }

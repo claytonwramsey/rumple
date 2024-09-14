@@ -8,4 +8,4 @@ pub use real::RealVector;
 
 pub struct Product<T>(T);
 
-pub struct Interpolate;
+pub struct LinearInterpolate;
