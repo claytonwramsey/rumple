@@ -1,9 +1,9 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
 pub mod float;
+pub mod geo;
 pub mod metric;
 pub mod nn;
-pub mod rrt;
 pub mod sample;
 pub mod space;
 pub mod time;

@@ -17,6 +17,51 @@ mod private {
 }
 use private::Node;
 
+#[allow(clippy::too_many_arguments)]
+pub fn rrt<C, NN, GR, V, SP, G, TC, TG, R, RNG>(
+    start: C,
+    grow: &GR,
+    valid: &V,
+    space_sampler: &SP,
+    goal: &G,
+    radius: R,
+    timeout: &mut TC,
+    target_goal_distn: &TG,
+    rng: &mut RNG,
+) -> Option<Vec<C>>
+where
+    NN: NearestNeighborsMap<C, Node> + Default,
+    GR: Interpolate<C, Distance = R>,
+    V: Validate<C>,
+    SP: Sample<C, RNG>,
+    G: Sample<C, RNG>,
+    R: Clone,
+    C: Clone,
+    TC: Timeout,
+    TG: Sample<bool, RNG>,
+{
+    let mut rrt = Rrt::new(start, NN::default());
+    let mut id = rrt.grow_help(
+        grow,
+        valid,
+        space_sampler,
+        goal,
+        radius,
+        timeout,
+        target_goal_distn,
+        rng,
+    )?;
+    let mut traj = Vec::new();
+    while id != 0 {
+        // can safely remove the configuration since we are deleting the rrt shortly
+        traj.push(rrt.configurations.swap_remove(id));
+        id = rrt.parent_ids[id];
+    }
+    traj.push(rrt.configurations.swap_remove(0));
+    traj.reverse();
+    Some(traj)
+}
+
 impl<C, NN> Rrt<C, NN> {
     pub fn new(root: C, mut nn: NN) -> Self
     where

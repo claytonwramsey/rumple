@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn make_rrt() {
-        use crate::rrt::Rrt;
+        use crate::geo::Rrt;
         let _rrt = Rrt::new(
             RealVector::from_floats([0.0]),
             KdTreeMap::new(SquaredEuclidean),

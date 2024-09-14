@@ -2,9 +2,9 @@ use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     float::R64,
+    geo::Rrt,
     metric::SquaredEuclidean,
     nn::KdTreeMap,
-    rrt::Rrt,
     sample::Everywhere,
     space::{LinearInterpolate, RealVector},
     time::Forever,
