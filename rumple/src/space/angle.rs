@@ -1,4 +1,4 @@
-use ordered_float::NotNan;
+use crate::float::Real;
 
 /// An angle (an element of [-_π_, _π_).).
 ///
@@ -8,4 +8,4 @@ use ordered_float::NotNan;
 /// You might be tempted to model orientations in 3D using a product of 3 `Angle`s.
 /// **This is a bad idea!**
 /// You should instead use a [`crate::space::Orient`] for 3D rotation instead.
-pub struct Angle<T>(NotNan<T>);
+pub struct Angle<T>(Real<T>);

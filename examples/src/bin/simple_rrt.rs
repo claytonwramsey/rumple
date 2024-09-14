@@ -1,6 +1,7 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
+    float::R64,
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     rrt::Rrt,
@@ -10,14 +11,12 @@ use rumple::{
     AlwaysValid, Metric,
 };
 
-use ordered_float::NotNan;
-
 fn main() {
     let mut rrt = Rrt::<RealVector<2>, KdTreeMap<_, _, _>>::new(
         RealVector::from_floats([0.0, 0.0]),
         KdTreeMap::new(SquaredEuclidean),
     );
-    let radius = NotNan::new(0.05).unwrap();
+    let radius = R64::new(0.05);
     let res = rrt
         .grow_toward(
             &LinearInterpolate,

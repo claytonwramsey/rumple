@@ -1,10 +1,10 @@
-use ordered_float::NotNan;
+use crate::float::Real;
 
 #[repr(C)]
 /// An orientation in 3D.
 pub struct Orient<T> {
-    x: NotNan<T>,
-    y: NotNan<T>,
-    z: NotNan<T>,
-    w: NotNan<T>,
+    x: Real<T>,
+    y: Real<T>,
+    z: Real<T>,
+    w: Real<T>,
 }

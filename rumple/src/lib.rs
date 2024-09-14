@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 
+pub mod float;
 pub mod metric;
 pub mod nn;
 pub mod rrt;

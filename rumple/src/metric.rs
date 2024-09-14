@@ -1,20 +1,19 @@
-use std::iter::Sum;
-
 use crate::{
+    float::Real,
     nn::{Region, RegionMetric},
     space::RealVector,
     Metric,
 };
-use ordered_float::{FloatCore, NotNan};
+use num_traits::Float;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SquaredEuclidean;
 
 impl<T, const N: usize> Metric<RealVector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore + Sum,
+    T: Float,
 {
-    type Distance = NotNan<T>;
+    type Distance = Real<T>;
 
     fn distance(&self, c1: &RealVector<N, T>, c2: &RealVector<N, T>) -> Self::Distance {
         c1.iter()
@@ -24,13 +23,13 @@ where
     }
 
     fn is_zero(&self, dist: &Self::Distance) -> bool {
-        T::is_zero(dist)
+        dist.is_zero()
     }
 }
 
 impl<T, const N: usize> RegionMetric<RealVector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore + Sum,
+    T: Float,
 {
     fn compare(
         &self,
@@ -51,8 +50,8 @@ where
 
     fn whole_space(&self) -> Region<RealVector<N, T>> {
         Region {
-            lo: RealVector::new([NotNan::new(T::neg_infinity()).unwrap(); N]),
-            hi: RealVector::new([NotNan::new(T::infinity()).unwrap(); N]),
+            lo: RealVector::new([Real::new(T::min_value()); N]),
+            hi: RealVector::new([Real::new(T::max_value()); N]),
         }
     }
 
@@ -65,13 +64,13 @@ where
             .iter()
             .zip(&*region.lo)
             .zip(&*region.hi)
-            .map(|((p, l), h)| {
+            .map(|((&p, &l), &h)| {
                 if p < l {
                     l - p
                 } else if h < p {
                     p - h
                 } else {
-                    NotNan::new(T::zero()).unwrap()
+                    Real::new(T::zero())
                 }
             })
             .map(|d| d * d)
