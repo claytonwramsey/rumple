@@ -1,11 +1,21 @@
-use crate::Timeout;
+pub trait Timeout {
+    fn is_over(&self) -> bool;
+
+    /// Update the number of attempted samples of the configuration space, incrementing by `_n`.
+    /// This includes both valid and invalid sampled states.
+    fn update_sample_count(&mut self, _n: usize) {}
+
+    /// Update the number of nodes in a configuration-space graph, incrementing by `_n`.
+    /// This exclusively includes valid sampled states.
+    fn update_node_count(&mut self, _n: usize) {}
+}
 
 /// A helper structure for generating a composite timeout of multiple conditions.
 ///
 /// # Examples
 ///
 /// ```
-/// use rumple::{Timeout, time::{Forever, LimitSamples, Any}};
+/// use rumple::time::{Timeout, Forever, LimitSamples, Any};
 /// let tc0 = Forever;
 /// let tc1 = LimitSamples::new(1000);
 /// let composed = Any((tc0, tc1));
@@ -15,7 +25,7 @@ use crate::Timeout;
 /// You can use the bitwise-or operator on any provided timeout for easy composition.
 ///
 /// ```
-/// use rumple::{Timeout, time::{LimitSamples, LimitNodes, Any}};
+/// use rumple::time::{Timeout, LimitSamples, LimitNodes, Any};
 /// let tc0 = LimitNodes::new(100);
 /// let tc1 = LimitSamples::new(1000);
 /// let composed = tc0 | tc1;
@@ -82,6 +92,9 @@ any_tuple!(A, B, C, D);
 any_tuple!(A, B, C, D, E);
 any_tuple!(A, B, C, D, E, F);
 any_tuple!(A, B, C, D, E, F, G);
+any_tuple!(A, B, C, D, E, F, G, H);
+any_tuple!(A, B, C, D, E, F, G, H, I);
+any_tuple!(A, B, C, D, E, F, G, H, I, J);
 
 macro_rules! bitor_impl {
     ($t: ident) => {

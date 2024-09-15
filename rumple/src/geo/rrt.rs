@@ -1,4 +1,4 @@
-use crate::{Interpolate, NearestNeighborsMap, Sample, Timeout, Validate};
+use crate::{time::Timeout, Interpolate, NearestNeighborsMap, Sample, Validate};
 use alloc::vec::Vec;
 
 pub struct Rrt<C, NN> {
