@@ -33,6 +33,7 @@ impl<C, NN> Prm<C, NN> {
         R: Clone,
     {
         let mut configurations = Vec::new();
+        let mut edges = Vec::new();
 
         while !timeout.is_over() {
             timeout.update_sample_count(1);
@@ -41,23 +42,23 @@ impl<C, NN> Prm<C, NN> {
                 continue;
             }
             timeout.update_node_count(1);
-            nn.insert(c.clone(), Node(configurations.len()));
-            configurations.push(c);
-        }
 
-        let mut edges = vec![Vec::new(); configurations.len()];
-        for (i, c) in configurations.iter().enumerate() {
+            edges.push(Vec::new());
+            let i = edges.len();
             for n in nn
-                .nearest_within_r(c, radius.clone())
+                .nearest_within_r(&c, radius.clone())
                 .filter_map(|&Node(n)| {
-                    (i < n && valid.is_valid_transition(c, &configurations[n])).then_some(n)
+                    valid
+                        .is_valid_transition(&c, &configurations[n])
+                        .then_some(n)
                 })
             {
-                // save on validation checks by only checking one transition per pair
-                // (assumes bidirectionality of edge validation)
+                // assume bidirectionality
                 edges[i].push(n);
                 edges[n].push(i);
             }
+            nn.insert(c.clone(), Node(i));
+            configurations.push(c);
         }
 
         Self {
