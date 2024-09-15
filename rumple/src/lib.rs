@@ -36,7 +36,13 @@ pub trait Sample<C, RNG> {
 pub trait Timeout {
     fn is_over(&self) -> bool;
 
+    /// Update the number of attempted samples of the configuration space, incrementing by `_n`.
+    /// This includes both valid and invalid sampled states.
     fn update_sample_count(&mut self, _n: usize) {}
+
+    /// Update the number of nodes in a configuration-space graph, incrementing by `_n`.
+    /// This exclusively includes valid sampled states.
+    fn update_node_count(&mut self, _n: usize) {}
 }
 
 pub trait Metric<C> {
@@ -51,6 +57,18 @@ pub trait NearestNeighborsMap<K, V> {
     fn insert(&mut self, key: K, value: V);
     /// Get the nearest element of the space to this key.
     fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)>;
+}
+
+pub trait RangeNearestNeighborsMap<K, V>: NearestNeighborsMap<K, V> {
+    type Distance;
+
+    type RangeNearest<'q>: Iterator<Item = &'q V>
+    where
+        V: 'q,
+        Self: 'q;
+
+    /// Get an iterator over all items in `self` within range `r` of
+    fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q>;
 }
 
 pub trait Interpolate: Sized {

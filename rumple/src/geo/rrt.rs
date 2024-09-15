@@ -113,6 +113,7 @@ impl<C, NN> Rrt<C, NN> {
             if !valid.is_valid_transition(start_cfg, &end_cfg) {
                 continue;
             }
+            timeout.update_node_count(1);
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
             self.parent_ids.push(start_id);
