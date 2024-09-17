@@ -233,7 +233,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{metric::SquaredEuclidean, space::RealVector};
+    use crate::{metric::SquaredEuclidean, space::RealVector, AlwaysValid};
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
@@ -279,9 +279,10 @@ mod tests {
     #[test]
     fn make_rrt() {
         use crate::geo::Rrt;
-        let _rrt = Rrt::<RealVector<1>, _>::new(
+        let _rrt = Rrt::new(
             RealVector::from_floats([0.0]),
             KdTreeMap::new(SquaredEuclidean),
+            &AlwaysValid,
         );
     }
 }

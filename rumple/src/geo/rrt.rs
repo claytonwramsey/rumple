@@ -1,7 +1,7 @@
 use crate::{time::Timeout, Interpolate, NearestNeighborsMap, Sample, Validate};
 use alloc::vec::Vec;
 
-pub struct Rrt<C, NN> {
+pub struct Rrt<'a, C, NN, V> {
     /// buffer of saved configurations
     /// configurations[0] is the root
     configurations: Vec<C>,
@@ -10,6 +10,8 @@ pub struct Rrt<C, NN> {
     parent_ids: Vec<usize>,
     /// The nearest neighbors lookup.
     nn: NN,
+    /// The state validator.
+    valid: &'a V,
 }
 
 /// Workaround module to avoid exposing implementation details of `Node` to consumers.
@@ -39,16 +41,8 @@ where
     TC: Timeout,
     TG: Sample<bool, RNG>,
 {
-    let mut rrt = Rrt::new(start, NN::default());
-    let mut id = rrt.grow_help(
-        valid,
-        space_sampler,
-        goal,
-        radius,
-        timeout,
-        target_goal_distn,
-        rng,
-    )?;
+    let mut rrt = Rrt::new(start, NN::default(), valid);
+    let mut id = rrt.grow_help(space_sampler, goal, radius, timeout, target_goal_distn, rng)?;
     let mut traj = Vec::new();
     while id != 0 {
         // can safely remove the configuration since we are deleting the rrt shortly
@@ -60,8 +54,8 @@ where
     Some(traj)
 }
 
-impl<C, NN> Rrt<C, NN> {
-    pub fn new(root: C, mut nn: NN) -> Self
+impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
+    pub fn new(root: C, mut nn: NN, valid: &'a V) -> Self
     where
         NN: NearestNeighborsMap<C, Node>,
         C: Clone,
@@ -71,13 +65,13 @@ impl<C, NN> Rrt<C, NN> {
             configurations: vec![root],
             parent_ids: vec![usize::MAX],
             nn,
+            valid,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn grow_help<V, SP, G, TC: Timeout, TG, RNG, R>(
+    fn grow_help<SP, G, TC: Timeout, TG, RNG, R>(
         &mut self,
-        valid: &V,
         space_sampler: &SP,
         goal: &G,
         radius: R,
@@ -110,7 +104,7 @@ impl<C, NN> Rrt<C, NN> {
                 Ok(c) => (true, c),
                 Err(c) => (false, c),
             };
-            if !valid.is_valid_transition(start_cfg, &end_cfg) {
+            if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
                 continue;
             }
             timeout.update_node_count(1);
@@ -132,9 +126,8 @@ impl<C, NN> Rrt<C, NN> {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn grow_toward<V, SP, G, TC, TG, R, RNG>(
+    pub fn grow_toward<SP, G, TC, TG, R, RNG>(
         &mut self,
-        valid: &V,
         space_sampler: &SP,
         goal: &G,
         radius: R,
@@ -152,15 +145,8 @@ impl<C, NN> Rrt<C, NN> {
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
     {
-        let mut id = self.grow_help(
-            valid,
-            space_sampler,
-            goal,
-            radius,
-            timeout,
-            target_goal_distn,
-            rng,
-        )?;
+        let mut id =
+            self.grow_help(space_sampler, goal, radius, timeout, target_goal_distn, rng)?;
         let mut traj = Vec::new();
         while id != 0 {
             traj.push(self.configurations[id].clone());

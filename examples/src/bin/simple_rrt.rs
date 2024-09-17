@@ -6,14 +6,14 @@ use rumple::{
 };
 
 fn main() {
-    let mut rrt = Rrt::<RealVector<2>, KdTreeMap<_, _, _>>::new(
+    let mut rrt = Rrt::new(
         RealVector::from_floats([0.0, 0.0]),
         KdTreeMap::new(SquaredEuclidean),
+        &AlwaysValid,
     );
     let radius = R64::new(0.05);
     let res = rrt
         .grow_toward(
-            &AlwaysValid,
             &Everywhere,
             &RealVector::from_floats([1.0, 1.0]),
             radius,
