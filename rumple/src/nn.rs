@@ -1,6 +1,7 @@
-use crate::{Metric, NearestNeighborsMap};
-use alloc::boxed::Box;
-use core::cmp::Ordering;
+use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
+use alloc::{boxed::Box, vec::Vec};
+use core::{cmp::Ordering, marker::PhantomData};
+use num_traits::Zero;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct KdTreeMap<K, V, M> {
@@ -89,12 +90,40 @@ where
         let region = self.metric.whole_space();
         let root = self.root.as_ref()?;
         let mut radius = self.metric.distance(&root.key, key);
-        if self.metric.is_zero(&radius) {
+        if radius.is_zero() {
             return Some((&root.key, &root.value));
         }
-        let best_node =
-            Self::nearest_help(root, key, region, &mut radius, &self.metric, 0).unwrap_or(root);
+        let best_node = self
+            .nearest_help(root, key, region, &mut radius, 0)
+            .unwrap_or(root);
         Some((&best_node.key, &best_node.value))
+    }
+}
+
+// TODO make this a resuming iterator
+pub struct RangeNearest<'a, K, V, M>(Vec<&'a V>, PhantomData<&'a KdTreeMap<K, V, M>>);
+
+impl<'a, K, V, M> Iterator for RangeNearest<'a, K, V, M> {
+    type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
+    }
+}
+
+impl<K, V, M> RangeNearestNeighborsMap<K, V> for KdTreeMap<K, V, M>
+where
+    M: RegionMetric<K>,
+    K: Clone,
+{
+    type Distance = M::Distance;
+    type RangeNearest<'q> = RangeNearest<'q, K, V, M> where K: 'q, V: 'q, M: 'q;
+
+    fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q> {
+        let mut result = Vec::new();
+        if let Some(root) = self.root.as_ref() {
+            self.nearest_r_help(key, &mut result, &r, root, self.metric.whole_space(), 0);
+        }
+        RangeNearest(result, PhantomData)
     }
 }
 
@@ -104,61 +133,59 @@ where
     K: Clone,
 {
     fn nearest_help<'q>(
+        &self,
         node: &'q Node<K, V>,
         key: &K,
         mut region: Region<K>,
         radius: &mut M::Distance,
-        metric: &M,
         k: usize,
     ) -> Option<&'q Node<K, V>> {
-        let is_right = metric.compare(&node.key, key, k).is_le();
+        let is_right = self.metric.compare(&node.key, key, k).is_le();
         let mut best_result = None;
         // search right side first
         let children = if is_right { [1, 0] } else { [0, 1] }.map(|i| node.children[i].as_deref());
         let mut r_shrunk = region.clone();
-        metric.set_dim(&mut r_shrunk.lo, &node.key, k);
-        if metric.dist_to_region(key, &r_shrunk) > *radius {
+        self.metric.set_dim(&mut r_shrunk.lo, &node.key, k);
+        if self.metric.dist_to_region(key, &r_shrunk) > *radius {
             // out of bounds
             return None;
         }
         if let Some(child) = children[0] {
-            let cdist = metric.distance(&child.key, key);
+            let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
-                if metric.is_zero(radius) {
+                if radius.is_zero() {
                     // exact match to query
                     return Some(child);
                 }
                 best_result = Some(
-                    Self::nearest_help(
+                    self.nearest_help(
                         child,
                         key,
                         r_shrunk,
                         radius,
-                        metric,
-                        (k + 1) % metric.dimension(),
+                        (k + 1) % self.metric.dimension(),
                     )
                     .unwrap_or(child),
                 );
             }
         }
         if let Some(child) = children[1] {
-            let cdist = metric.distance(&child.key, key);
+            let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
-                if metric.is_zero(radius) {
+                if radius.is_zero() {
                     // exact match to query
                     return Some(child);
                 }
-                metric.set_dim(&mut region.lo, &node.key, k);
+                self.metric.set_dim(&mut region.lo, &node.key, k);
                 return Some(
-                    Self::nearest_help(
+                    self.nearest_help(
                         child,
                         key,
                         region,
                         radius,
-                        metric,
-                        (k + 1) % metric.dimension(),
+                        (k + 1) % self.metric.dimension(),
                     )
                     .unwrap_or(child),
                 );
@@ -166,6 +193,40 @@ where
         }
 
         best_result
+    }
+
+    fn nearest_r_help<'q>(
+        &'q self,
+        point: &K,
+        buf: &mut Vec<&'q V>,
+        radius: &M::Distance,
+        node: &'q Node<K, V>,
+        mut region: Region<K>,
+        k: usize,
+    ) {
+        if &self.metric.distance(point, &node.key) <= radius {
+            buf.push(&node.value);
+        }
+        if let Some(c) = node.children[0].as_deref() {
+            let mut r1 = region.clone();
+            self.metric.set_dim(&mut r1.hi, &node.key, k);
+            if &self.metric.dist_to_region(point, &r1) <= radius {
+                self.nearest_r_help(point, buf, radius, c, r1, (k + 1) % self.metric.dimension());
+            }
+        }
+        if let Some(c) = node.children[1].as_deref() {
+            self.metric.set_dim(&mut region.lo, &node.key, k);
+            if &self.metric.dist_to_region(point, &region) <= radius {
+                self.nearest_r_help(
+                    point,
+                    buf,
+                    radius,
+                    c,
+                    region,
+                    (k + 1) % self.metric.dimension(),
+                );
+            }
+        }
     }
 }
 

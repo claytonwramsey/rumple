@@ -1,6 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::pedantic, clippy::nursery)]
 
+use num_traits::Zero;
+
 #[macro_use]
 extern crate alloc;
 
@@ -33,23 +35,10 @@ pub trait Sample<C, RNG> {
     fn sample(&self, rng: &mut RNG) -> C;
 }
 
-pub trait Timeout {
-    fn is_over(&self) -> bool;
-
-    /// Update the number of attempted samples of the configuration space, incrementing by `_n`.
-    /// This includes both valid and invalid sampled states.
-    fn update_sample_count(&mut self, _n: usize) {}
-
-    /// Update the number of nodes in a configuration-space graph, incrementing by `_n`.
-    /// This exclusively includes valid sampled states.
-    fn update_node_count(&mut self, _n: usize) {}
-}
-
 pub trait Metric<C> {
-    type Distance: Ord;
+    type Distance: Ord + Zero;
 
     fn distance(&self, c1: &C, c2: &C) -> Self::Distance;
-    fn is_zero(&self, dist: &Self::Distance) -> bool;
 }
 
 pub trait NearestNeighborsMap<K, V> {

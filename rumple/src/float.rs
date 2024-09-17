@@ -5,7 +5,7 @@ use core::{
     ops::{Add, Div, Mul, Sub},
 };
 
-use num_traits::float::FloatCore;
+use num_traits::{float::FloatCore, Zero};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Hash)]
@@ -104,3 +104,17 @@ impl<T: FloatCore> Sum for Real<T> {
 }
 
 impl<T: FloatCore> Eq for Ordered<T> {}
+
+impl<T: FloatCore> Zero for Real<T> {
+    fn zero() -> Self {
+        Self(T::zero())
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
+    fn set_zero(&mut self) {
+        self.0.set_zero();
+    }
+}

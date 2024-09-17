@@ -90,6 +90,7 @@ version = "0.1.0"
 dependencies = [
  "num-traits",
  "rand",
+ "rand_chacha",
 ]
 
 [[package]]

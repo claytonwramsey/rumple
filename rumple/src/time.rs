@@ -110,7 +110,7 @@ macro_rules! bitor_impl {
 #[cfg(feature = "std")]
 mod alarm {
     use super::Any;
-    use crate::Timeout;
+    use crate::time::Timeout;
     use core::time::Duration;
     use std::time::Instant;
 

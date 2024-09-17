@@ -21,10 +21,6 @@ where
             .map(|(&a, &b)| (a - b) * (a - b))
             .sum()
     }
-
-    fn is_zero(&self, dist: &Self::Distance) -> bool {
-        dist.is_zero()
-    }
 }
 
 impl<T, const N: usize> RegionMetric<RealVector<N, T>> for SquaredEuclidean
