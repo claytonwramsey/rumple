@@ -67,6 +67,7 @@ pub trait Interpolate: Sized {
     /// Attempt to grow from `self` to `goal`.
     ///
     /// Returns `Ok(end)` if `self` and `end` are within `radius` of one another.
-    /// Returns `Err(x)`, where `x` is within `radius` distance of `self` but along the direction toward `end`.
+    /// Returns `Err(x)`, where `x` is within `radius` distance of `self` but along the direction
+    /// toward `end`.
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self>;
 }

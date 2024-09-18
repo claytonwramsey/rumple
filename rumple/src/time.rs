@@ -18,7 +18,7 @@ pub trait Timeout {
 /// # Examples
 ///
 /// ```
-/// use rumple::time::{Timeout, Forever, LimitSamples, Any};
+/// use rumple::time::{Any, Forever, LimitSamples, Timeout};
 /// let tc0 = Forever;
 /// let tc1 = LimitSamples::new(1000);
 /// let composed = Any((tc0, tc1));
@@ -28,7 +28,7 @@ pub trait Timeout {
 /// You can use the bitwise-or operator on any provided timeout for easy composition.
 ///
 /// ```
-/// use rumple::time::{Timeout, LimitSamples, LimitNodes, Any};
+/// use rumple::time::{Any, LimitNodes, LimitSamples, Timeout};
 /// let tc0 = LimitNodes::new(100);
 /// let tc1 = LimitSamples::new(1000);
 /// let composed = tc0 | tc1;
