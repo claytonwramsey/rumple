@@ -8,6 +8,9 @@ pub trait Timeout {
     /// Update the number of nodes in a configuration-space graph, incrementing by `_n`.
     /// This exclusively includes valid sampled states.
     fn update_node_count(&mut self, _n: usize) {}
+
+    /// Notify that the problem has been solved (i.e. with a satisficing solution).
+    fn notify_solved(&mut self) {}
 }
 
 /// A helper structure for generating a composite timeout of multiple conditions.
@@ -34,6 +37,8 @@ pub trait Timeout {
 pub struct Any<T>(pub T);
 
 pub struct Forever;
+
+pub struct Solved(bool);
 
 #[cfg(feature = "std")]
 pub use alarm::Alarm;
@@ -202,6 +207,30 @@ impl Timeout for LimitSamples {
     }
 }
 
+impl Timeout for Solved {
+    fn is_over(&self) -> bool {
+        self.0
+    }
+
+    fn notify_solved(&mut self) {
+        self.0 = true;
+    }
+}
+
+impl Solved {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self(false)
+    }
+}
+
+impl Default for Solved {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 bitor_impl!(Forever);
 bitor_impl!(LimitSamples);
 bitor_impl!(LimitNodes);
+bitor_impl!(Solved);

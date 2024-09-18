@@ -2,7 +2,7 @@ use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     float::R64, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Everywhere,
-    space::RealVector, time::Forever, AlwaysValid, Metric,
+    space::RealVector, time::Solved, AlwaysValid, Metric,
 };
 
 fn main() {
@@ -17,7 +17,7 @@ fn main() {
             &Everywhere,
             &RealVector::from_floats([1.0, 1.0]),
             radius,
-            &mut Forever,
+            &mut Solved::new(),
             &Bernoulli::new(0.05).unwrap(),
             &mut ChaCha20Rng::seed_from_u64(2707),
         )

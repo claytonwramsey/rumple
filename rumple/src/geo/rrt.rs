@@ -88,6 +88,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         C: Clone + Interpolate<Distance = R>,
         TG: Sample<bool, RNG>,
     {
+        let mut soln = None;
         while !timeout.is_over() {
             timeout.update_sample_count(1);
             let sample_goal = target_goal_distn.sample(rng);
@@ -118,11 +119,12 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
             );
             self.nn.insert(end_cfg, Node(new_id));
             if sample_goal && reached {
-                return Some(new_id);
+                timeout.notify_solved();
+                soln = Some(new_id);
             }
         }
 
-        None
+        soln
     }
 
     #[allow(clippy::too_many_arguments)]
