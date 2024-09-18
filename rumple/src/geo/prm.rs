@@ -113,14 +113,13 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         let i = self.edges.len();
         self.edges.push(Vec::new());
         let new_component = self.components.create();
-        let components = &mut self.components;
         for n in self
             .nn
             .nearest_within_r(&c, radius)
             .map(|&Node(n)| n)
             .filter(|&n| self.valid.is_valid_transition(&c, &self.configurations[n]))
         {
-            components.unify(new_component, n);
+            self.components.unify(new_component, n);
             // assume bidirectionality
             self.edges[i].push(n);
             self.edges[n].push(i);
