@@ -1,4 +1,4 @@
-use crate::{float::Real, metric::SquaredEuclidean, Interpolate, Metric, Sample};
+use crate::{float::Real, metric::SquaredEuclidean, nn::KdKey, Interpolate, Metric, Sample};
 use core::{
     array,
     ops::{Deref, DerefMut, Sub},
@@ -96,6 +96,24 @@ impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for RealVector<N, T> {
             *a = Real::new(a.into_inner() - b.into_inner());
         }
         self
+    }
+}
+
+impl<T, const N: usize> KdKey for RealVector<N, T>
+where
+    Real<T>: Ord,
+    T: Clone,
+{
+    fn assign(&mut self, src: &Self, k: usize) {
+        self.0[k] = src.0[k].clone();
+    }
+
+    fn compare(&self, rhs: &Self, k: usize) -> core::cmp::Ordering {
+        self.0[k].cmp(&rhs.0[k])
+    }
+
+    fn dimension() -> usize {
+        N
     }
 }
 

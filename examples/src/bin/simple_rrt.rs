@@ -1,14 +1,8 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    float::R64,
-    geo::Rrt,
-    metric::SquaredEuclidean,
-    nn::KdTreeMap,
-    sample::Everywhere,
-    space::RealVector,
-    time::{LimitNodes, Solved},
-    AlwaysValid, Metric,
+    float::R64, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Everywhere,
+    space::RealVector, time::LimitNodes, AlwaysValid, Metric,
 };
 
 fn main() {
