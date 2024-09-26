@@ -1,5 +1,3 @@
-use crate::{metric::SquaredEuclidean, Metric};
-
 use super::{Aabbs, Balls};
 use core::array;
 use num_traits::float::FloatCore;

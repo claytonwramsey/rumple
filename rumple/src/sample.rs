@@ -1,15 +1,9 @@
-use core::{
-    array,
-    ops::{Range, RangeInclusive},
-};
+use core::array;
 
 use crate::{space::RealVector, Sample};
 use num_traits::float::FloatCore;
 use rand::{
-    distributions::{
-        uniform::{SampleRange, SampleUniform},
-        Bernoulli, Distribution, Standard,
-    },
+    distributions::{uniform::SampleUniform, Bernoulli, Distribution},
     Rng,
 };
 
@@ -17,7 +11,7 @@ impl<A, B, S, RNG> Sample<(A, B), RNG> for S
 where
     S: Sample<A, RNG> + Sample<B, RNG>,
 {
-    fn sample(&self, rng: &mut RNG) -> (A, B) {
+    fn sample(&self, _: &mut RNG) -> (A, B) {
         todo!()
     }
 }

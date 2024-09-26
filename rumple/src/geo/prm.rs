@@ -328,7 +328,7 @@ mod tests {
         float::r32,
         metric::SquaredEuclidean,
         nn::KdTreeMap,
-        sample::Everywhere,
+        sample::Rectangle,
         space::RealVector,
         time::{LimitNodes, Solved},
         AlwaysValid, Metric,
@@ -353,7 +353,10 @@ mod tests {
         prm.grow_r(
             r,
             &mut LimitNodes::new(50),
-            &Everywhere,
+            &Rectangle {
+                min: RealVector::from_floats([0.0; 2]),
+                max: RealVector::from_floats([1.0; 2]),
+            },
             &mut ChaCha20Rng::seed_from_u64(2707),
         );
         let path = prm
@@ -395,7 +398,10 @@ mod tests {
         prm.grow_r_solve(
             r,
             &mut Solved::new(),
-            &Everywhere,
+            &Rectangle {
+                min: RealVector::from_floats([0.0; 2]),
+                max: RealVector::from_floats([1.0; 2]),
+            },
             &mut ChaCha20Rng::seed_from_u64(2707),
             start,
             end,

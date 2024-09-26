@@ -14,11 +14,23 @@ pub struct Real<T>(T);
 pub type R32 = Real<f32>;
 pub type R64 = Real<f64>;
 
-#[must_use] pub fn r32(x: f32) -> R32 {
+#[must_use]
+/// Construct a new real-valued 32-bit float.
+///
+/// # Panics
+///
+/// This function will panic if `x` is non-finite.
+pub fn r32(x: f32) -> R32 {
     Real::new(x).unwrap()
 }
 
-#[must_use] pub fn r64(x: f64) -> R64 {
+#[must_use]
+/// Construct a new real-valued 64-bit float.
+///
+/// # Panics
+///
+/// This function will panic if `x` is non-finite.
+pub fn r64(x: f64) -> R64 {
     Real::new(x).unwrap()
 }
 
