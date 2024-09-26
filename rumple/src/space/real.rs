@@ -4,7 +4,7 @@ use core::{
     ops::{Deref, DerefMut, Sub},
     ptr::addr_of,
 };
-use num_traits::float::FloatCore;
+use num_traits::{float::FloatCore, One};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[expect(clippy::module_name_repetitions)]
@@ -24,7 +24,7 @@ impl<T, const N: usize> RealVector<N, T> {
     where
         T: FloatCore,
     {
-        Self(x.map(|v| Real::new(v)))
+        Self(x.map(|v| Real::new(v).unwrap()))
     }
 }
 
@@ -71,11 +71,11 @@ where
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
         let dist = SquaredEuclidean.distance(self, end);
         if dist <= radius {
-            Ok(*end)
+            Err(*end)
         } else {
             let scl = radius / dist;
-            let inv_scl = Real::new(T::one()) - scl;
-            Err(Self(array::from_fn(|i| inv_scl * self[i] + scl * end[i])))
+            let inv_scl = Real::<T>::one() - scl;
+            Ok(Self(array::from_fn(|i| inv_scl * self[i] + scl * end[i])))
         }
     }
 }
@@ -93,7 +93,7 @@ impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for RealVector<N, T> {
     type Output = Self;
     fn sub(mut self, rhs: Self) -> Self::Output {
         for (a, b) in self.iter_mut().zip(rhs.into_iter()) {
-            *a = Real::new(a.into_inner() - b.into_inner());
+            *a = Real::new(a.into_inner() - b.into_inner()).unwrap();
         }
         self
     }
@@ -120,14 +120,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::float::r32;
 
     #[test]
     fn interpolate_real() {
         let x = RealVector::from_floats([0.0]);
         let y = RealVector::from_floats([1.0]);
-        let dist = Real::new(0.05);
+        let dist = r32(0.05);
         let z_expected = RealVector::from_floats([0.05]);
-        let z = x.interpolate(&y, dist).unwrap_err();
+        let z = x.interpolate(&y, dist).unwrap();
         assert!((z - z_expected)[0].abs().into_inner() <= 0.001);
     }
 }

@@ -6,6 +6,7 @@ use num_traits::Zero;
 #[macro_use]
 extern crate alloc;
 
+pub mod env;
 pub mod float;
 pub mod geo;
 pub mod metric;
@@ -13,6 +14,7 @@ pub mod nn;
 pub mod sample;
 pub mod space;
 pub mod time;
+pub mod valid;
 
 pub trait Validate<C> {
     fn is_valid_configuration(&self, c: &C) -> bool;
@@ -66,8 +68,8 @@ pub trait Interpolate: Sized {
     #[expect(clippy::missing_errors_doc)]
     /// Attempt to grow from `self` to `goal`.
     ///
-    /// Returns `Ok(end)` if `self` and `end` are within `radius` of one another.
-    /// Returns `Err(x)`, where `x` is within `radius` distance of `self` but along the direction
+    /// Returns `Err(end)` if `self` and `end` are within `radius` of one another.
+    /// Returns `Ok(x)`, where `x` is within `radius` distance of `self` but along the direction
     /// toward `end`.
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self>;
 }

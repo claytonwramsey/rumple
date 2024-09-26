@@ -325,7 +325,7 @@ impl<T> Eq for PrmNodeId<T> {}
 #[cfg(test)]
 mod tests {
     use crate::{
-        float::Real,
+        float::r32,
         metric::SquaredEuclidean,
         nn::KdTreeMap,
         sample::Everywhere,
@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn prm2d() {
-        let r = Real::new(0.05);
+        let r = r32(0.05);
         let mut prm: Prm<RealVector<2, f32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
         let start = prm
@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn prm_solved() {
-        let r = Real::new(0.05);
+        let r = r32(0.05);
         let mut prm: Prm<RealVector<2, f32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
         let start = prm
