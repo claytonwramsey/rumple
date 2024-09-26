@@ -1,5 +1,7 @@
 //! Sample environments for testing planners.
 
+use alloc::vec::Vec;
+
 mod world2d;
 
 pub use world2d::World2d;

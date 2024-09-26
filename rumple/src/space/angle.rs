@@ -1,4 +1,4 @@
-use num_traits::float::{FloatConst, FloatCore};
+use num_traits::float::FloatCore;
 
 use crate::nn::KdKey;
 
@@ -21,7 +21,7 @@ impl<T> Angle<T> {
     /// This function will panic if `T` is not between -pi and pi.
     pub fn new(value: T) -> Self
     where
-        T: FloatConst + FloatCore,
+        T: num_traits::FloatConst + FloatCore,
     {
         assert!(
             -T::PI() <= value && value < T::PI(),
