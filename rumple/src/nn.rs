@@ -1,6 +1,6 @@
 use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
 use alloc::{boxed::Box, vec::Vec};
-use core::{cmp::Ordering, marker::PhantomData};
+use core::{cmp::Ordering, fmt::Debug, marker::PhantomData};
 use num_traits::Zero;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -190,7 +190,6 @@ where
             } else {
                 reg_lo.assign(&node.key, k);
             }
-
             if self.metric.distance_to_aabb(key, &reg_lo, &reg_hi) < *radius {
                 best_result = self
                     .nearest_help(child, key, reg_lo, reg_hi, radius, (k + 1) % K::dimension())
@@ -387,7 +386,8 @@ mod tests {
             metric: m,
         };
         let mut kdt = KdTreeMap::new(m);
-        for _ in 0..2_000 {
+        for i in 0..2_000 {
+            println!("i={i}");
             let pt: Pose2d<R32> = region.sample(&mut rng);
             println!("insert {pt:?}");
             bf.insert(pt, ());
@@ -395,8 +395,10 @@ mod tests {
             let q = region.sample(&mut rng);
             // println!("{kdt:#?}");
             println!("query {q:?}");
-            let bf_nearest = bf.nearest(&q);
-            let kdt_nearest = kdt.nearest(&q);
+            let bf_nearest = bf.nearest(&q).unwrap().0;
+            let kdt_nearest = kdt.nearest(&q).unwrap().0;
+            println!("bf distance {:?}", m.distance(bf_nearest, &q));
+            println!("kdt distance {:?}", m.distance(kdt_nearest, &q));
             assert_eq!(bf_nearest, kdt_nearest);
         }
     }

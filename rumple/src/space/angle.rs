@@ -51,7 +51,8 @@ impl<T> Angle<T> {
         T: FloatCore + FloatConst,
     {
         let diff = other.get() - self.get();
-        (diff + T::PI()).rem(T::TAU()) - T::PI()
+        // IEEE 754 was sent from hell to punish me
+        (diff + T::TAU() + T::PI()).rem(T::TAU()) - T::PI()
     }
 }
 
