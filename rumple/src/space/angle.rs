@@ -4,7 +4,7 @@ use crate::nn::KdKey;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
-/// An angle (an element of [-_π_, _π_).).
+/// An angle (an element of [0, 2π).).
 ///
 /// Angles can uniquely model the special orthogonal group in 2 dimensions (_SO_(2)), also known as
 /// the set of 2D rotations.
@@ -24,9 +24,13 @@ impl<T> Angle<T> {
         T: num_traits::FloatConst + FloatCore,
     {
         assert!(
-            -T::PI() <= value && value < T::PI(),
-            "angle must be between -pi and pi"
+            T::zero() <= value && value < T::TAU(),
+            "angle must be between 0 and 2pi"
         );
+        Self(value)
+    }
+
+    pub unsafe fn new_unchecked(value: T) -> Self {
         Self(value)
     }
 
