@@ -106,10 +106,8 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
                 Err(c) => (true, c),
             };
             if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
-                println!("invalid transition");
                 continue;
             }
-            println!("valid transition");
             timeout.update_node_count(1);
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());

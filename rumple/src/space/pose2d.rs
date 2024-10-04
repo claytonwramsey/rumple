@@ -14,7 +14,7 @@ pub struct Pose2d<T> {
 
 impl<T> Interpolate for Pose2d<T>
 where
-    T: FloatCore + FloatConst + Sum + std::fmt::Debug,
+    T: FloatCore + FloatConst + Sum,
 {
     type Distance = PoseRadius<T>;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {

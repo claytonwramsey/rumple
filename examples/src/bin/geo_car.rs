@@ -57,39 +57,25 @@ fn main() {
             )
         },
         PoseRadius {
-            angle_dist: r64(PI / 90.0),
-            position_dist: r64(0.3),
+            angle_dist: r64(PI / 180.0),
+            position_dist: r64(0.01),
         },
     );
 
     let grow_radius = PoseRadius {
-        angle_dist: r64(PI / 5.0),
+        angle_dist: r64(PI / 4.0),
         position_dist: r64(2.0),
     };
     let mut rrt = Rrt::new(
         start,
-        BruteForce {
-            poses: Vec::new(),
-            values: Vec::new(),
-            metric: WeightedPoseDistance {
-                position_metric: SquaredEuclidean,
-                position_weight: r64(1.0),
-                angle_metric: SquaredEuclidean,
-                angle_weight: r64(1.0),
-            },
-        },
+        KdTreeMap::new(WeightedPoseDistance {
+            position_metric: SquaredEuclidean,
+            position_weight: r64(1.0),
+            angle_metric: SquaredEuclidean,
+            angle_weight: r64(1.0),
+        }),
         &valid,
     );
-    // let mut rrt = Rrt::new(
-    //     start,
-    //     KdTreeMap::new(WeightedPoseDistance {
-    //         position_metric: SquaredEuclidean,
-    //         position_weight: r64(1.0),
-    //         angle_metric: SquaredEuclidean,
-    //         angle_weight: r64(1.0),
-    //     }),
-    //     &valid,
-    // );
     let traj = rrt
         .grow_toward(
             &Rectangle {
@@ -106,34 +92,4 @@ fn main() {
 
     println!("Created {} nodes", rrt.num_nodes());
     println!("{traj:?}");
-}
-
-struct BruteForce<V, M> {
-    poses: Vec<Pose2d<R64>>,
-    values: Vec<V>,
-    metric: M,
-}
-
-impl<V, M> NearestNeighborsMap<Pose2d<R64>, V> for BruteForce<V, M>
-where
-    M: Metric<Pose2d<R64>>,
-{
-    fn insert(&mut self, key: Pose2d<R64>, value: V) {
-        self.poses.push(key);
-        self.values.push(value);
-    }
-
-    fn nearest<'q>(&'q self, key: &Pose2d<R64>) -> Option<(&'q Pose2d<R64>, &'q V)> {
-        let mut best_i = 0;
-        let mut best_dist = self.metric.distance(self.poses.first()?, key);
-        for (i, pose) in self.poses.iter().enumerate() {
-            let dist = self.metric.distance(pose, key);
-            if dist < best_dist {
-                best_i = i;
-                best_dist = dist;
-            }
-        }
-
-        Some((&self.poses[best_i], &self.values[best_i]))
-    }
 }

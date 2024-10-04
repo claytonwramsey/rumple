@@ -353,12 +353,10 @@ mod tests {
         let mut kdt = KdTreeMap::new(SquaredEuclidean);
         for _ in 0..2_000 {
             let pt: Vector<N, R32> = region.sample(&mut rng);
-            println!("insert {pt:?}");
             bf.insert(pt, ());
             kdt.insert(pt, ());
             let q = region.sample(&mut rng);
             // println!("{kdt:#?}");
-            println!("query {q:?}");
             let bf_nearest = bf.nearest(&q);
             let kdt_nearest = kdt.nearest(&q);
             assert_eq!(bf_nearest, kdt_nearest);
@@ -386,19 +384,14 @@ mod tests {
             metric: m,
         };
         let mut kdt = KdTreeMap::new(m);
-        for i in 0..2_000 {
-            println!("i={i}");
+        for _ in 0..2_000 {
             let pt: Pose2d<R32> = region.sample(&mut rng);
-            println!("insert {pt:?}");
             bf.insert(pt, ());
             kdt.insert(pt, ());
             let q = region.sample(&mut rng);
             // println!("{kdt:#?}");
-            println!("query {q:?}");
             let bf_nearest = bf.nearest(&q).unwrap().0;
             let kdt_nearest = kdt.nearest(&q).unwrap().0;
-            println!("bf distance {:?}", m.distance(bf_nearest, &q));
-            println!("kdt distance {:?}", m.distance(kdt_nearest, &q));
             assert_eq!(bf_nearest, kdt_nearest);
         }
     }
