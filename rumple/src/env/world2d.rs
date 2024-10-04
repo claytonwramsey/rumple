@@ -1,4 +1,4 @@
-use crate::space::Angle;
+use core::cmp::min;
 
 use super::{Aabb, Ball};
 use alloc::vec::Vec;
@@ -87,6 +87,7 @@ impl<T> World2d<T>
 where
     T: num_traits::Float + FloatConst + Copy + std::fmt::Debug,
 {
+    #[allow(clippy::similar_names)]
     /// Determine whether a rectangle collides with any object in this world.
     /// Returns `true` if the rectangle is in collision and `false` otherwise.
     ///
@@ -164,8 +165,88 @@ where
 
                 let x01 = x + anti_x;
                 let y01 = y + anti_y;
-                todo!("AABB rect collision checking")
+
+                // check SAT for normal axes of AABB
+                let xs = [x00, x01, x10, x11];
+                if xs.into_iter().all(|x| x > xh) {
+                    return false;
+                }
+                if xs.into_iter().all(|x| x < xl) {
+                    return false;
+                }
+                let ys = [y00, y01, y10, y11];
+                if ys.into_iter().all(|y| y > yh) {
+                    return false;
+                }
+                if ys.into_iter().all(|y| y < yl) {
+                    return false;
+                }
+
+                // transform AABB corners onto rect coordinate frame
+                // first, undo translation
+                let delta_xh = xh - x;
+                let delta_yh = yh - y;
+                let delta_xl = xl - x;
+                let delta_yl = yl - y;
+
+                // undo rotation
+                let ax00_t = delta_xl * cos + delta_yl * sin;
+                let ay00_t = -delta_xl * sin + delta_yl * cos;
+                let ax01_t = delta_xh * cos + delta_yl * sin;
+                let ay01_t = -delta_xh * sin + delta_yl * cos;
+                let ax10_t = delta_xl * cos + delta_yh * sin;
+                let ay10_t = -delta_xl * sin + delta_yh * cos;
+                let ax11_t = delta_xh * cos + delta_yh * sin;
+                let ay11_t = -delta_xh * sin + delta_yh * cos;
+
+                // ax..t is now the x-position of an AABB corner in the coordinate frame of the rect
+                let xs = [ax00_t, ax01_t, ax10_t, ax11_t];
+                let ys = [ay00_t, ay01_t, ay10_t, ay11_t];
+
+                if xs.into_iter().all(|x| x > half_w) {
+                    return false;
+                }
+                if xs.into_iter().all(|x| x < -half_w) {
+                    return false;
+                }
+
+                if ys.into_iter().all(|y| y > half_h) {
+                    return false;
+                }
+                if ys.into_iter().all(|y| y < -half_h) {
+                    return false;
+                }
+                true
             },
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::f64::consts::PI;
+
+    use super::World2d;
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn aabb_rect() {
+        let mut world = World2d::new();
+        world.add_aabb(1.0, 2.0, 3.0, 4.0);
+
+        // no intersecting corners
+        assert!(world.collides_rect(2.0, 3.0, 0.0, 0.1, 5.0));
+
+        // completely contained
+        assert!(world.collides_rect(2.0, 3.0, 0.0, 0.1, 0.1));
+
+        // one intersecting corner
+        assert!(world.collides_rect(2.0, 4.5, PI / 4.0, 0.45, 0.45));
+
+        // parallel and above
+        assert!(!world.collides_rect(2.0, 5.1, 0.0, 0.1, 1.0));
+
+        // no intersecting corner
+        assert!(!world.collides_rect(2.0, 5.0, PI / 4.0, 0.45, 0.45));
     }
 }
