@@ -212,14 +212,19 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{metric::SquaredEuclidean, space::RealVector, AlwaysValid};
+    use crate::{
+        float::{r64, R64},
+        metric::SquaredEuclidean,
+        space::Vector,
+        AlwaysValid,
+    };
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
-    ) -> KdTreeMap<RealVector<N>, (), SquaredEuclidean> {
+    ) -> KdTreeMap<Vector<N, R64>, (), SquaredEuclidean> {
         let mut t = KdTreeMap::new(SquaredEuclidean);
         for &point in points {
-            t.insert(RealVector::from_floats(point), ());
+            t.insert(Vector::new(point.map(r64)), ());
         }
         t
     }
@@ -233,15 +238,15 @@ mod tests {
     #[test]
     fn get_empty() {
         let t = build_tree(&[]);
-        assert_eq!(t.nearest(&RealVector::from_floats([0.0, 0.0])), None);
+        assert_eq!(t.nearest(&Vector::new([0.0, 0.0].map(r64))), None);
     }
 
     #[test]
     fn get_one() {
         let t = build_tree(&[[1.0, 1.0]]);
         assert_eq!(
-            t.nearest(&RealVector::from_floats([0.0, 0.0])),
-            Some((&RealVector::from_floats([1.0, 1.0]), &()))
+            t.nearest(&Vector::new([0.0, 0.0].map(r64))),
+            Some((&Vector::new([1.0, 1.0].map(r64)), &()))
         );
     }
 
@@ -250,8 +255,8 @@ mod tests {
         let t = build_tree(&[[1.0, 1.0], [1.5, 1.1], [-0.5, 0.5]]);
         // println!("{t:?}");
         assert_eq!(
-            t.nearest(&RealVector::from_floats([0.0, 0.0])),
-            Some((&RealVector::from_floats([-0.5, 0.5]), &()))
+            t.nearest(&Vector::new([0.0, 0.0].map(r64))),
+            Some((&Vector::new([-0.5, 0.5].map(r64)), &()))
         );
     }
 
@@ -259,7 +264,7 @@ mod tests {
     fn make_rrt() {
         use crate::geo::Rrt;
         let _rrt = Rrt::new(
-            RealVector::from_floats([0.0]),
+            Vector::new([r64(0.0)]),
             KdTreeMap::new(SquaredEuclidean),
             &AlwaysValid,
         );

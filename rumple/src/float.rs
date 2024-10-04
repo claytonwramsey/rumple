@@ -6,6 +6,7 @@ use core::{
 };
 
 use num_traits::{float::FloatCore, Num, NumCast, One, ToPrimitive, Zero};
+use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformFloat, UniformSampler};
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Hash)]
@@ -304,5 +305,72 @@ impl<T: FloatCore> Zero for Real<T> {
 
     fn set_zero(&mut self) {
         self.0.set_zero();
+    }
+}
+
+impl SampleUniform for R32 {
+    type Sampler = UniformReal<f32>;
+}
+impl SampleUniform for R64 {
+    type Sampler = UniformReal<f64>;
+}
+
+pub struct UniformReal<X>(UniformFloat<X>);
+
+impl<X> UniformSampler for UniformReal<X>
+where
+    UniformFloat<X>: UniformSampler<X = X>,
+    X: FloatCore + SampleBorrow<X>,
+{
+    type X = Real<X>;
+
+    fn new<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        Self(UniformFloat::new(low.borrow().0, high.borrow().0))
+    }
+
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
+        Real::new(self.0.sample(rng)).unwrap()
+    }
+
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        Self(UniformFloat::new_inclusive(low.borrow().0, high.borrow().0))
+    }
+
+    fn sample_single<R: rand::Rng + ?Sized, B1, B2>(low: B1, high: B2, rng: &mut R) -> Self::X
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        Real::new(UniformFloat::<X>::sample_single(
+            low.borrow().0,
+            high.borrow().0,
+            rng,
+        ))
+        .unwrap()
+    }
+
+    fn sample_single_inclusive<R: rand::Rng + ?Sized, B1, B2>(
+        low: B1,
+        high: B2,
+        rng: &mut R,
+    ) -> Self::X
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        Real::new(UniformFloat::<X>::sample_single_inclusive(
+            low.borrow().0,
+            high.borrow().0,
+            rng,
+        ))
+        .unwrap()
     }
 }

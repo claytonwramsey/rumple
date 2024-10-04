@@ -1,7 +1,7 @@
 use core::array;
 
 use crate::{
-    space::{Angle, Pose2d, RealVector},
+    space::{Angle, Pose2d, Vector},
     Sample,
 };
 use num_traits::{float::FloatCore, FloatConst};
@@ -32,14 +32,12 @@ pub struct Rectangle<T> {
 
 pub struct Everywhere;
 
-impl<const N: usize, T, RNG: Rng> Sample<RealVector<N, T>, RNG> for Rectangle<RealVector<N, T>>
+impl<const N: usize, T, RNG: Rng> Sample<Vector<N, T>, RNG> for Rectangle<Vector<N, T>>
 where
     T: FloatCore + SampleUniform,
 {
-    fn sample(&self, rng: &mut RNG) -> RealVector<N, T> {
-        RealVector::from_floats(array::from_fn(|i| {
-            rng.gen_range(self.min[i].into_inner()..=self.max[i].into_inner())
-        }))
+    fn sample(&self, rng: &mut RNG) -> Vector<N, T> {
+        Vector::new(array::from_fn(|i| rng.gen_range(self.min[i]..=self.max[i])))
     }
 }
 
@@ -52,7 +50,7 @@ where
     }
 }
 
-impl<T, RNG: Rng> Sample<Pose2d<T>, RNG> for Rectangle<RealVector<2, T>>
+impl<T, RNG: Rng> Sample<Pose2d<T>, RNG> for Rectangle<Vector<2, T>>
 where
     T: FloatConst + FloatCore + SampleUniform,
 {

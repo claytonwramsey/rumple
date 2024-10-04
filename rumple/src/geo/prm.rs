@@ -325,11 +325,11 @@ impl<T> Eq for PrmNodeId<T> {}
 #[cfg(test)]
 mod tests {
     use crate::{
-        float::r32,
+        float::{r32, R32},
         metric::SquaredEuclidean,
         nn::KdTreeMap,
         sample::Rectangle,
-        space::RealVector,
+        space::Vector,
         time::{LimitNodes, Solved},
         AlwaysValid, Metric,
     };
@@ -342,20 +342,16 @@ mod tests {
     #[test]
     fn prm2d() {
         let r = r32(0.05);
-        let mut prm: Prm<RealVector<2, f32>, _, _> =
+        let mut prm: Prm<Vector<2, R32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
-        let start = prm
-            .insert_r(RealVector::from_floats([0.0, 0.0]), r)
-            .unwrap();
-        let end = prm
-            .insert_r(RealVector::from_floats([1.0, 1.0]), r)
-            .unwrap();
+        let start = prm.insert_r(Vector::new([0.0, 0.0].map(r32)), r).unwrap();
+        let end = prm.insert_r(Vector::new([1.0, 1.0].map(r32)), r).unwrap();
         prm.grow_r(
             r,
             &mut LimitNodes::new(50),
             &Rectangle {
-                min: RealVector::from_floats([0.0; 2]),
-                max: RealVector::from_floats([1.0; 2]),
+                min: Vector::new([0.0; 2].map(r32)),
+                max: Vector::new([1.0; 2].map(r32)),
             },
             &mut ChaCha20Rng::seed_from_u64(2707),
         );
@@ -387,20 +383,16 @@ mod tests {
     #[test]
     fn prm_solved() {
         let r = r32(0.05);
-        let mut prm: Prm<RealVector<2, f32>, _, _> =
+        let mut prm: Prm<Vector<2, R32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
-        let start = prm
-            .insert_r(RealVector::from_floats([0.0, 0.0]), r)
-            .unwrap();
-        let end = prm
-            .insert_r(RealVector::from_floats([1.0, 1.0]), r)
-            .unwrap();
+        let start = prm.insert_r(Vector::new([0.0, 0.0].map(r32)), r).unwrap();
+        let end = prm.insert_r(Vector::new([1.0, 1.0].map(r32)), r).unwrap();
         prm.grow_r_solve(
             r,
             &mut Solved::new(),
             &Rectangle {
-                min: RealVector::from_floats([0.0; 2]),
-                max: RealVector::from_floats([1.0; 2]),
+                min: Vector::new([0.0; 2].map(r32)),
+                max: Vector::new([1.0; 2].map(r32)),
             },
             &mut ChaCha20Rng::seed_from_u64(2707),
             start,

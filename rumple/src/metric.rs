@@ -1,19 +1,31 @@
-use crate::{float::Real, space::RealVector, Metric};
+use core::iter::Sum;
+
+use crate::{space::Vector, Metric};
 use num_traits::float::FloatCore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SquaredEuclidean;
 
-impl<T, const N: usize> Metric<RealVector<N, T>> for SquaredEuclidean
-where
-    T: FloatCore,
-{
-    type Distance = Real<T>;
+impl SquaredEuclidean {
+    pub fn partial_distance<T, const N: usize>(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> T
+    where
+        T: FloatCore,
+    {
+        let mut total = T::zero();
+        for (&a, &b) in c1.iter().zip(c2.iter()) {
+            total = total + (a - b) * (a - b);
+        }
+        total
+    }
+}
 
-    fn distance(&self, c1: &RealVector<N, T>, c2: &RealVector<N, T>) -> Self::Distance {
-        c1.iter()
-            .zip(c2.iter())
-            .map(|(&a, &b)| (a - b) * (a - b))
-            .sum()
+impl<T, const N: usize> Metric<Vector<N, T>> for SquaredEuclidean
+where
+    T: FloatCore + Ord + Sum,
+{
+    type Distance = T;
+
+    fn distance(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> Self::Distance {
+        self.partial_distance(c1, c2)
     }
 }

@@ -1,6 +1,6 @@
 use num_traits::float::FloatCore;
 
-use crate::nn::KdKey;
+use crate::{nn::KdKey, Interpolate};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
@@ -30,7 +30,10 @@ impl<T> Angle<T> {
         Self(value)
     }
 
-    pub unsafe fn new_unchecked(value: T) -> Self {
+    /// # Safety
+    ///
+    /// Will be unsafe if `value` is not in the range [0, 2pi).
+    pub const unsafe fn new_unchecked(value: T) -> Self {
         Self(value)
     }
 
@@ -73,5 +76,12 @@ impl<T: Clone + Ord> KdKey for Angle<T> {
 impl<T> AsRef<T> for Angle<T> {
     fn as_ref(&self) -> &T {
         &self.0
+    }
+}
+
+impl<T> Interpolate for Angle<T> {
+    type Distance = T;
+    fn interpolate(&self, _end: &Self, _radius: Self::Distance) -> Result<Self, Self> {
+        todo!()
     }
 }

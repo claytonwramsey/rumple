@@ -1,8 +1,10 @@
-use core::cmp::min;
-
 use super::{Aabb, Ball};
 use alloc::vec::Vec;
-use num_traits::{float::FloatCore, FloatConst};
+use num_traits::float::FloatCore;
+
+#[cfg(feature = "std")]
+use num_traits::FloatConst;
+
 pub struct World2d<T = f64> {
     aabbs: Vec<Aabb<2, T>>,
     balls: Vec<Ball<2, T>>,
@@ -224,13 +226,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::f64::consts::PI;
-
-    use super::World2d;
 
     #[test]
     #[cfg(feature = "std")]
     fn aabb_rect() {
+        use super::World2d;
+        use core::f64::consts::PI;
         let mut world = World2d::new();
         world.add_aabb(1.0, 2.0, 3.0, 4.0);
 
