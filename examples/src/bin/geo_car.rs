@@ -12,7 +12,6 @@ use rumple::{
     space::{Angle, Pose2d, PoseRadius, Vector, WeightedPoseDistance},
     time::Solved,
     valid::SampleValidate,
-    Metric, NearestNeighborsMap,
 };
 
 fn main() {
