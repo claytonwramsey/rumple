@@ -77,7 +77,7 @@ where
         debug_assert!(T::zero() <= yh - yl, "aabb must have positive height");
         self.aabbs.push(Aabb {
             los: [xl, yl],
-            his: [xl, yl],
+            his: [xh, yh],
         });
     }
 }
@@ -107,12 +107,12 @@ where
     /// world.add_ball(1.0, 1.0, 0.5);
     ///
     /// // rectangle centered at (0.0, 1.0) with width 1.5 and height 0.25 collides with the ball
-    /// assert!(world.collides_rect(0.0, 1.0, Angle::new(0.0), 1.5, 0.25));
+    /// assert!(world.collides_rect(0.0, 1.0, 0.0, 1.5, 0.25));
     ///
     /// // but if we rotate the rectangle, it won't collide
-    /// assert!(!world.collides_rect(0.0, 1.0, Angle::new(std::f64::consts::PI / 2.0), 0.75, 0.25));
+    /// assert!(!world.collides_rect(0.0, 1.0, std::f64::consts::PI / 2.0, 0.75, 0.25));
     /// ```
-    pub fn collides_rect(&self, x: T, y: T, theta: Angle<T>, half_w: T, half_h: T) -> bool {
+    pub fn collides_rect(&self, x: T, y: T, theta: T, half_w: T, half_h: T) -> bool {
         debug_assert!(
             T::zero() <= half_w,
             "width of rect for collision checking must be positive"
@@ -121,8 +121,8 @@ where
             T::zero() <= half_h,
             "height of rect for collision checking must be positive",
         );
-        let cos = theta.get().cos();
-        let sin = theta.get().sin();
+        let cos = theta.cos();
+        let sin = theta.sin();
         self.balls.iter().any(|&Ball { pos: [xc, yc], r }| {
             let delta_x = xc - x;
             let delta_y = yc - y;
@@ -143,9 +143,29 @@ where
             // dbg!(xc, yc, delta_x, delta_y, x_trans, y_trans, x_clamp, y_clamp, x_diff, y_diff);
 
             x_diff * x_diff + y_diff * y_diff <= r * r
-        }) || self
-            .aabbs
-            .iter()
-            .any(|_| todo!("implement collision checking for AABB/rect"))
+        }) || self.aabbs.iter().any(
+            |&Aabb {
+                 los: [xl, yl],
+                 his: [xh, yh],
+             }| {
+                // compute locations of corners on rect
+                let diag_x = half_w * cos - half_h * sin;
+                let diag_y = half_w * sin + half_h * cos;
+                let x11 = x + diag_x;
+                let y11 = y + diag_y;
+
+                let x00 = x - diag_x;
+                let y00 = y - diag_y;
+
+                let anti_x = -half_w * cos - half_h * sin;
+                let anti_y = -half_w * sin + half_h * cos;
+                let x10 = x - anti_x;
+                let y10 = y - anti_y;
+
+                let x01 = x + anti_x;
+                let y01 = y + anti_y;
+                todo!("AABB rect collision checking")
+            },
+        )
     }
 }
