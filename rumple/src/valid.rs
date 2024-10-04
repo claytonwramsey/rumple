@@ -2,7 +2,8 @@ use crate::{Interpolate, Validate};
 
 #[derive(Clone, Copy, Debug)]
 /// An edge validator that determines validity by subsampling states along an edge.
-/// The user must provide an individual state validator (`F`) and a distance between each sample (`R`).
+/// The user must provide an individual state validator (`F`) and a distance between each sample
+/// (`R`).
 pub struct SampleValidate<F, R> {
     fun: F,
     radius: R,
