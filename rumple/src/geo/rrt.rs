@@ -40,6 +40,7 @@ where
     C: Clone + Interpolate<Distance = R>,
     TC: Timeout,
     TG: Sample<bool, RNG>,
+    C: std::fmt::Debug,
 {
     let mut rrt = Rrt::new(start, NN::default(), valid);
     let mut id = rrt.grow_help(space_sampler, goal, radius, timeout, target_goal_distn, rng)?;
@@ -87,6 +88,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
         TG: Sample<bool, RNG>,
+        C: std::fmt::Debug,
     {
         let mut soln = None;
         while !timeout.is_over() {
@@ -97,17 +99,22 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
             } else {
                 space_sampler.sample(rng)
             };
+            println!("target is {target:?}");
             let (start_cfg, &Node(start_id)) = self
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
+            dbg!(start_cfg);
             let (reached, end_cfg) = match start_cfg.interpolate(&target, radius.clone()) {
                 Ok(c) => (false, c),
                 Err(c) => (true, c),
             };
+            println!("interp is {end_cfg:?}");
             if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
+                println!("invalid transition");
                 continue;
             }
+            println!("valid transition");
             timeout.update_node_count(1);
             let new_id = self.configurations.len();
             self.configurations.push(end_cfg.clone());
@@ -146,6 +153,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         NN: NearestNeighborsMap<C, Node>,
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
+        C: std::fmt::Debug,
     {
         let mut id =
             self.grow_help(space_sampler, goal, radius, timeout, target_goal_distn, rng)?;

@@ -1,4 +1,4 @@
-use num_traits::float::FloatCore;
+use num_traits::{float::FloatCore, FloatConst};
 
 use crate::{nn::KdKey, Interpolate};
 
@@ -43,9 +43,19 @@ impl<T> Angle<T> {
     {
         self.0
     }
+
+    /// Compute the signed distance from `self` to `other`.
+    /// Will be positive if the closest direction toward `other` is positive, and negative otherwise.
+    pub fn signed_distance(self, other: Self) -> T
+    where
+        T: FloatCore + FloatConst,
+    {
+        let diff = other.get() - self.get();
+        (diff + T::PI()).rem(T::TAU()) - T::PI()
+    }
 }
 
-impl<T: FloatCore> Eq for Angle<T> {}
+impl<T: PartialEq> Eq for Angle<T> {}
 
 impl<T: FloatCore> PartialOrd for Angle<T> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -79,9 +89,17 @@ impl<T> AsRef<T> for Angle<T> {
     }
 }
 
-impl<T> Interpolate for Angle<T> {
+impl<T> Interpolate for Angle<T>
+where
+    T: FloatCore + FloatConst,
+{
     type Distance = T;
-    fn interpolate(&self, _end: &Self, _radius: Self::Distance) -> Result<Self, Self> {
-        todo!()
+    fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Result<Self, Self> {
+        let dist = self.signed_distance(end);
+        if dist.abs() <= radius {
+            Err(end)
+        } else {
+            Ok(Self((dist.signum() * radius + self.0).rem(T::TAU())))
+        }
     }
 }

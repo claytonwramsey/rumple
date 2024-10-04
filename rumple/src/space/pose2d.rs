@@ -1,11 +1,12 @@
 use core::iter::Sum;
 
-use num_traits::float::FloatCore;
+use num_traits::{float::FloatCore, FloatConst};
 
-use crate::Interpolate;
+use crate::{nn::KdKey, Interpolate, Sample};
 
-use super::{Angle, PoseDistance, Vector};
+use super::{Angle, PoseRadius, Vector};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Pose2d<T> {
     pub position: Vector<2, T>,
     pub angle: Angle<T>,
@@ -13,9 +14,9 @@ pub struct Pose2d<T> {
 
 impl<T> Interpolate for Pose2d<T>
 where
-    T: FloatCore + Sum,
+    T: FloatCore + FloatConst + Sum + std::fmt::Debug,
 {
-    type Distance = PoseDistance<T>;
+    type Distance = PoseRadius<T>;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
         let pos_res = self
             .position
@@ -23,8 +24,44 @@ where
         let angle_res = self.angle.interpolate(&end.angle, radius.angle_dist);
 
         match (pos_res, angle_res) {
-            (Ok(position), Ok(angle)) => Ok(Self { position, angle }),
-            (Ok(position) | Err(position), Ok(angle) | Err(angle)) => Err(Self { position, angle }),
+            (Err(position), Err(angle)) => Err(Self { position, angle }),
+            (Ok(position) | Err(position), Ok(angle) | Err(angle)) => Ok(Self { position, angle }),
+        }
+    }
+}
+
+impl<T, RNG> Sample<Self, RNG> for Pose2d<T>
+where
+    T: Clone,
+{
+    fn sample(&self, _: &mut RNG) -> Self {
+        self.clone()
+    }
+}
+
+impl<T> KdKey for Pose2d<T>
+where
+    Vector<2, T>: KdKey,
+    Angle<T>: KdKey,
+    Self: Clone,
+{
+    fn dimension() -> usize {
+        3
+    }
+
+    fn assign(&mut self, src: &Self, k: usize) {
+        match k {
+            k if k < 2 => self.position.assign(&src.position, k),
+            2 => self.angle.assign(&src.angle, 0),
+            _ => panic!("cannot assign dimension greater than 2"),
+        };
+    }
+
+    fn compare(&self, rhs: &Self, k: usize) -> core::cmp::Ordering {
+        match k {
+            k if k < 2 => self.position.compare(&rhs.position, k),
+            2 => self.angle.compare(&rhs.angle, 0),
+            _ => panic!("cannot test dimension greater than 2"),
         }
     }
 }

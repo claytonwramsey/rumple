@@ -5,7 +5,7 @@ use core::{
     ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
-use num_traits::{float::FloatCore, Num, NumCast, One, ToPrimitive, Zero};
+use num_traits::{float::FloatCore, FloatConst, Num, NumCast, One, ToPrimitive, Zero};
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformFloat, UniformSampler};
 
 #[repr(transparent)]
@@ -308,6 +308,21 @@ impl<T: FloatCore> Zero for Real<T> {
     }
 }
 
+macro_rules! add_const {
+    ($($name: ident), *) => {
+        $(fn $name () -> Self {
+            Self(T::$name())
+        })*
+    };
+}
+
+impl<T: FloatConst> FloatConst for Real<T> {
+    add_const! {
+    E, PI, FRAC_1_PI, FRAC_1_SQRT_2, FRAC_2_PI, FRAC_2_SQRT_PI,
+    FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, LN_10,
+    LN_2, LOG10_E, LOG2_E, SQRT_2}
+}
+
 impl SampleUniform for R32 {
     type Sampler = UniformReal<f32>;
 }
@@ -320,7 +335,7 @@ pub struct UniformReal<X>(UniformFloat<X>);
 impl<X> UniformSampler for UniformReal<X>
 where
     UniformFloat<X>: UniformSampler<X = X>,
-    X: FloatCore + SampleBorrow<X>,
+    X: FloatCore + SampleBorrow<X> + Debug,
 {
     type X = Real<X>;
 

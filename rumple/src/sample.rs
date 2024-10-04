@@ -52,7 +52,7 @@ where
 
 impl<T, RNG: Rng> Sample<Pose2d<T>, RNG> for Rectangle<Vector<2, T>>
 where
-    T: FloatConst + FloatCore + SampleUniform,
+    T: FloatConst + FloatCore + SampleUniform + std::fmt::Debug,
 {
     fn sample(&self, rng: &mut RNG) -> Pose2d<T> {
         Pose2d {

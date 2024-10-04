@@ -6,7 +6,7 @@ use core::{
 use num_traits::float::FloatCore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Vector<const N: usize, T = f64>([T; N]);
+pub struct Vector<const N: usize, T = f64>(pub [T; N]);
 
 impl<T, const N: usize> Vector<N, T> {
     pub const fn new(x: [T; N]) -> Self {
