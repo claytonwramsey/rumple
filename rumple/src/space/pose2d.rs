@@ -64,4 +64,18 @@ where
             _ => panic!("cannot test dimension greater than 2"),
         }
     }
+
+    fn lower_bound() -> Self {
+        Self {
+            position: Vector::lower_bound(),
+            angle: Angle::lower_bound(),
+        }
+    }
+
+    fn upper_bound() -> Self {
+        Self {
+            position: Vector::upper_bound(),
+            angle: Angle::upper_bound(),
+        }
+    }
 }

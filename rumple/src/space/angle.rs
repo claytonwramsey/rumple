@@ -1,4 +1,4 @@
-use num_traits::{float::FloatCore, FloatConst};
+use num_traits::{float::FloatCore, FloatConst, Zero};
 
 use crate::{nn::KdKey, Interpolate};
 
@@ -69,7 +69,7 @@ impl<T: FloatCore> Ord for Angle<T> {
     }
 }
 
-impl<T: Clone + Ord> KdKey for Angle<T> {
+impl<T: Clone + Ord + FloatConst + Zero> KdKey for Angle<T> {
     fn dimension() -> usize {
         1
     }
@@ -80,6 +80,14 @@ impl<T: Clone + Ord> KdKey for Angle<T> {
 
     fn assign(&mut self, src: &Self, _: usize) {
         self.0 = src.0.clone();
+    }
+
+    fn lower_bound() -> Self {
+        Self(T::zero())
+    }
+
+    fn upper_bound() -> Self {
+        Self(T::TAU())
     }
 }
 

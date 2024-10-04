@@ -24,6 +24,12 @@ pub trait KdKey: Clone {
     fn dimension() -> usize;
     fn compare(&self, rhs: &Self, k: usize) -> Ordering;
     fn assign(&mut self, src: &Self, k: usize);
+    fn lower_bound() -> Self;
+    fn upper_bound() -> Self;
+}
+
+pub trait DistanceAabb<C>: Metric<C> {
+    fn distance_to_aabb(&self, c: &C, aabb_lo: &C, aabb_hi: &C) -> Self::Distance;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -41,7 +47,7 @@ impl<K, V, M> KdTreeMap<K, V, M> {
 
 impl<K, V, M> NearestNeighborsMap<K, V> for KdTreeMap<K, V, M>
 where
-    M: Metric<K>,
+    M: DistanceAabb<K>,
     K: KdKey,
 {
     fn insert(&mut self, key: K, value: V) {
@@ -79,7 +85,14 @@ where
             return Some((&root.key, &root.value));
         }
         let best_node = self
-            .nearest_help(root, key, key.clone(), &mut radius, 0)
+            .nearest_help(
+                root,
+                key,
+                K::lower_bound(),
+                K::upper_bound(),
+                &mut radius,
+                0,
+            )
             .unwrap_or(root);
         Some((&best_node.key, &best_node.value))
     }
@@ -97,16 +110,24 @@ impl<'a, K, V, M> Iterator for RangeNearest<'a, K, V, M> {
 
 impl<K, V, M> RangeNearestNeighborsMap<K, V> for KdTreeMap<K, V, M>
 where
-    M: Metric<K>,
+    M: DistanceAabb<K>,
     K: KdKey,
 {
-    type Distance = M::Distance;
+    type Distance = <M as Metric<K>>::Distance;
     type RangeNearest<'q> = RangeNearest<'q, K, V, M> where K: 'q, V: 'q, M: 'q;
 
     fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q> {
         let mut result = Vec::new();
         if let Some(root) = self.root.as_ref() {
-            self.nearest_r_help(key, &mut result, &r, root, key.clone(), 0);
+            self.nearest_r_help(
+                key,
+                &mut result,
+                &r,
+                root,
+                K::lower_bound(),
+                K::upper_bound(),
+                0,
+            );
         }
         RangeNearest(result, PhantomData)
     }
@@ -114,19 +135,20 @@ where
 
 impl<K, V, M> KdTreeMap<K, V, M>
 where
-    M: Metric<K>,
+    M: DistanceAabb<K>,
     K: KdKey,
 {
     fn nearest_help<'q>(
         &self,
         node: &'q Node<K, V>,
         key: &K,
-        nearest_in_region: K,
-        radius: &mut M::Distance,
+        mut reg_lo: K,
+        mut reg_hi: K,
+        radius: &mut <M as Metric<K>>::Distance,
         k: usize,
     ) -> Option<&'q Node<K, V>> {
-        let is_right = node.key.compare(key, k).is_le();
         let mut best_result = None;
+        let is_right = node.key.compare(key, k).is_le();
         // search right side first
         let children = if is_right { [1, 0] } else { [0, 1] }.map(|i| node.children[i].as_deref());
 
@@ -134,61 +156,68 @@ where
             let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
+                best_result = Some(child);
                 if radius.is_zero() {
                     // exact match to query
-                    return Some(child);
+                    return best_result;
                 }
             }
 
-            best_result = Some(
-                self.nearest_help(
+            best_result = self
+                .nearest_help(
                     child,
                     key,
-                    nearest_in_region.clone(),
+                    reg_lo.clone(),
+                    reg_hi.clone(),
                     radius,
                     (k + 1) % K::dimension(),
                 )
-                .unwrap_or(child),
-            );
+                .or(best_result);
         }
         if let Some(child) = children[1] {
             let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
+                best_result = Some(child);
                 if radius.is_zero() {
                     // exact match to query
-                    return Some(child);
+                    return best_result;
                 }
             }
 
-            let mut new_nir = nearest_in_region;
-            new_nir.assign(&node.key, k);
+            if is_right {
+                reg_hi.assign(&node.key, k);
+            } else {
+                reg_lo.assign(&node.key, k);
+            }
 
-            if self.metric.distance(&new_nir, key) < *radius {
-                return Some(
-                    self.nearest_help(child, key, new_nir, radius, (k + 1) % K::dimension())
-                        .unwrap_or(child),
-                );
+            if self.metric.distance_to_aabb(key, &reg_lo, &reg_hi) < *radius {
+                best_result = self
+                    .nearest_help(child, key, reg_lo, reg_hi, radius, (k + 1) % K::dimension())
+                    .or(best_result);
             }
         }
 
         best_result
     }
 
+    #[expect(clippy::too_many_arguments)]
     fn nearest_r_help<'q>(
         &'q self,
         point: &K,
         buf: &mut Vec<&'q V>,
-        radius: &M::Distance,
+        radius: &<M as Metric<K>>::Distance,
         node: &'q Node<K, V>,
-        nearest_in_region: K,
+        mut reg_lo: K,
+        mut reg_hi: K,
         k: usize,
     ) {
         if &self.metric.distance(point, &node.key) <= radius {
             buf.push(&node.value);
         }
 
-        let [near_child, far_child] = if point.compare(&node.key, k).is_lt() {
+        let is_left = point.compare(&node.key, k).is_lt();
+        let [near_child, far_child] = if is_left {
             [node.children[0].as_deref(), node.children[1].as_deref()]
         } else {
             [node.children[1].as_deref(), node.children[0].as_deref()]
@@ -196,14 +225,17 @@ where
 
         let new_k = (k + 1) % K::dimension();
         if let Some(c) = near_child {
-            self.nearest_r_help(point, buf, radius, c, nearest_in_region.clone(), new_k);
+            self.nearest_r_help(point, buf, radius, c, reg_lo.clone(), reg_hi.clone(), new_k);
         }
 
         if let Some(c) = far_child {
-            let mut nir = nearest_in_region;
-            nir.assign(&node.key, k);
-            if &self.metric.distance(point, &nir) <= radius {
-                self.nearest_r_help(point, buf, radius, c, nir, new_k);
+            if is_left {
+                reg_lo.assign(&node.key, k);
+            } else {
+                reg_hi.assign(&node.key, k);
+            }
+            if &self.metric.distance_to_aabb(point, &reg_lo, &reg_hi) <= radius {
+                self.nearest_r_help(point, buf, radius, c, reg_lo, reg_hi, new_k);
             }
         }
     }
@@ -211,13 +243,47 @@ where
 
 #[cfg(test)]
 mod tests {
+    use rand::SeedableRng;
+    use rand_chacha::ChaCha20Rng;
+
     use super::*;
     use crate::{
-        float::{r64, R64},
+        float::{r32, r64, R32, R64},
         metric::SquaredEuclidean,
-        space::Vector,
-        AlwaysValid,
+        sample::Rectangle,
+        space::{Pose2d, Vector, WeightedPoseDistance},
+        AlwaysValid, Sample,
     };
+
+    struct BruteForce<K, V, M> {
+        poses: Vec<K>,
+        values: Vec<V>,
+        metric: M,
+    }
+
+    impl<K, V, M> NearestNeighborsMap<K, V> for BruteForce<K, V, M>
+    where
+        M: Metric<K>,
+    {
+        fn insert(&mut self, key: K, value: V) {
+            self.poses.push(key);
+            self.values.push(value);
+        }
+
+        fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)> {
+            let mut best_i = 0;
+            let mut best_dist = self.metric.distance(self.poses.first()?, key);
+            for (i, pose) in self.poses.iter().enumerate() {
+                let dist = self.metric.distance(pose, key);
+                if dist < best_dist {
+                    best_i = i;
+                    best_dist = dist;
+                }
+            }
+
+            Some((&self.poses[best_i], &self.values[best_i]))
+        }
+    }
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
@@ -268,5 +334,70 @@ mod tests {
             KdTreeMap::new(SquaredEuclidean),
             &AlwaysValid,
         );
+    }
+
+    #[test]
+    fn randomized_3d() {
+        const N: usize = 3;
+        let region = Rectangle {
+            min: Vector::new([r32(-10.0); N]),
+            max: Vector::new([r32(10.0); N]),
+        };
+
+        let mut rng = ChaCha20Rng::seed_from_u64(2707);
+
+        let mut bf = BruteForce {
+            poses: Vec::new(),
+            values: Vec::new(),
+            metric: SquaredEuclidean,
+        };
+        let mut kdt = KdTreeMap::new(SquaredEuclidean);
+        for _ in 0..2_000 {
+            let pt: Vector<N, R32> = region.sample(&mut rng);
+            println!("insert {pt:?}");
+            bf.insert(pt, ());
+            kdt.insert(pt, ());
+            let q = region.sample(&mut rng);
+            // println!("{kdt:#?}");
+            println!("query {q:?}");
+            let bf_nearest = bf.nearest(&q);
+            let kdt_nearest = kdt.nearest(&q);
+            assert_eq!(bf_nearest, kdt_nearest);
+        }
+    }
+
+    #[test]
+    fn pose2d() {
+        let region = Rectangle {
+            min: Vector::new([r32(-10.0); 2]),
+            max: Vector::new([r32(10.0); 2]),
+        };
+
+        let mut rng = ChaCha20Rng::seed_from_u64(2707);
+
+        let m = WeightedPoseDistance {
+            position_metric: SquaredEuclidean,
+            position_weight: r32(1.0),
+            angle_metric: SquaredEuclidean,
+            angle_weight: r32(1.0),
+        };
+        let mut bf = BruteForce {
+            poses: Vec::new(),
+            values: Vec::new(),
+            metric: m,
+        };
+        let mut kdt = KdTreeMap::new(m);
+        for _ in 0..2_000 {
+            let pt: Pose2d<R32> = region.sample(&mut rng);
+            println!("insert {pt:?}");
+            bf.insert(pt, ());
+            kdt.insert(pt, ());
+            let q = region.sample(&mut rng);
+            // println!("{kdt:#?}");
+            println!("query {q:?}");
+            let bf_nearest = bf.nearest(&q);
+            let kdt_nearest = kdt.nearest(&q);
+            assert_eq!(bf_nearest, kdt_nearest);
+        }
     }
 }

@@ -335,7 +335,7 @@ pub struct UniformReal<X>(UniformFloat<X>);
 impl<X> UniformSampler for UniformReal<X>
 where
     UniformFloat<X>: UniformSampler<X = X>,
-    X: FloatCore + SampleBorrow<X> + Debug,
+    X: FloatCore + SampleBorrow<X>,
 {
     type X = Real<X>;
 

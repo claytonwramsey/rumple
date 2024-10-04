@@ -80,6 +80,16 @@ fn main() {
         },
         &valid,
     );
+    // let mut rrt = Rrt::new(
+    //     start,
+    //     KdTreeMap::new(WeightedPoseDistance {
+    //         position_metric: SquaredEuclidean,
+    //         position_weight: r64(1.0),
+    //         angle_metric: SquaredEuclidean,
+    //         angle_weight: r64(1.0),
+    //     }),
+    //     &valid,
+    // );
     let traj = rrt
         .grow_toward(
             &Rectangle {

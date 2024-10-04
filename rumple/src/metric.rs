@@ -1,6 +1,7 @@
-use core::iter::Sum;
+use core::{array, cmp::min, iter::Sum};
 
 use crate::{
+    nn::DistanceAabb,
     space::{Angle, Vector},
     Metric,
 };
@@ -36,6 +37,25 @@ where
     }
 }
 
+impl<T, const N: usize> DistanceAabb<Vector<N, T>> for SquaredEuclidean
+where
+    T: FloatCore + Ord + Sum,
+{
+    fn distance_to_aabb(
+        &self,
+        c: &Vector<N, T>,
+        aabb_lo: &Vector<N, T>,
+        aabb_hi: &Vector<N, T>,
+    ) -> Self::Distance {
+        Self.distance(
+            c,
+            &Vector(array::from_fn(|i| {
+                FloatCore::clamp(c[i], aabb_lo[i], aabb_hi[i])
+            })),
+        )
+    }
+}
+
 impl<T> Metric<Angle<T>> for Euclidean
 where
     T: FloatCore + FloatConst + Ord,
@@ -56,5 +76,37 @@ where
     fn distance(&self, c1: &Angle<T>, c2: &Angle<T>) -> Self::Distance {
         let d = Euclidean.distance(c1, c2);
         d * d
+    }
+}
+
+impl<T> DistanceAabb<Angle<T>> for Euclidean
+where
+    T: FloatCore + FloatConst + Ord,
+{
+    fn distance_to_aabb(
+        &self,
+        c: &Angle<T>,
+        aabb_lo: &Angle<T>,
+        aabb_hi: &Angle<T>,
+    ) -> Self::Distance {
+        if aabb_lo <= c && c <= aabb_hi {
+            T::zero()
+        } else {
+            min(Self.distance(c, aabb_lo), Self.distance(c, aabb_hi))
+        }
+    }
+}
+
+impl<T> DistanceAabb<Angle<T>> for SquaredEuclidean
+where
+    T: FloatCore + FloatConst + Ord,
+{
+    fn distance_to_aabb(
+        &self,
+        c: &Angle<T>,
+        aabb_lo: &Angle<T>,
+        aabb_hi: &Angle<T>,
+    ) -> Self::Distance {
+        Euclidean.distance_to_aabb(c, aabb_lo, aabb_hi).powi(2)
     }
 }
