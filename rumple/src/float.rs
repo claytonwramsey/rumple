@@ -100,8 +100,8 @@ where
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self::Output {
+        assert!(!rhs.is_zero(), "cannot take real modulo of zero");
         let r = self.0.rem(rhs.0);
-        assert!(r.is_finite());
         Self(r)
     }
 }

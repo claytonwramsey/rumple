@@ -51,8 +51,14 @@ impl<T> Angle<T> {
         T: FloatCore + FloatConst,
     {
         let diff = other.get() - self.get();
-        // IEEE 754 was sent from hell to punish me
-        (diff + T::TAU() + T::PI()).rem(T::TAU()) - T::PI()
+        // manual check is faster than fmod
+        if diff > T::PI() {
+            diff - T::TAU()
+        } else if diff < -T::PI() {
+            diff + T::TAU()
+        } else {
+            diff
+        }
     }
 }
 
@@ -110,5 +116,21 @@ where
         } else {
             Ok(Self((dist.signum() * radius + self.0).rem(T::TAU())))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::f32::consts::{PI, TAU};
+
+    use crate::space::Angle;
+
+    #[test]
+    fn sign_dist() {
+        assert!((dbg!(Angle::new(0.0).signed_distance(Angle::new(TAU - 0.1)) + 0.1)).abs() < 1e-5);
+
+        assert!((Angle::new(TAU - 0.1).signed_distance(Angle::new(0.0)) - 0.1).abs() <= 1e-5);
+
+        assert!((Angle::new(0.25f32).signed_distance(Angle::new(0.5)) - 0.25).abs() <= 1e-5);
     }
 }
