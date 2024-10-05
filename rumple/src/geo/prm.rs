@@ -4,7 +4,7 @@ use core::{fmt::Debug, hash::Hash, iter, marker::PhantomData, mem::swap, ops::Ad
 use alloc::vec::Vec;
 use num_traits::Zero;
 
-use crate::{time::Timeout, Metric, RangeNearestNeighborsMap, Sample, Validate};
+use crate::{time::Timeout, Metric, RangeNearestNeighborsMap, Sample};
 
 pub struct Prm<'a, C, NN, V> {
     /// List of configurations for each node.
@@ -20,6 +20,8 @@ mod private {
     pub struct Node(pub usize);
 }
 use private::Node;
+
+use super::EdgeValidate;
 
 #[allow(clippy::module_name_repetitions)]
 pub struct PrmNodeId<PRM>(usize, PhantomData<PRM>);
@@ -53,7 +55,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
 
     pub fn grow_r<R, TC, S, RNG>(&mut self, radius: R, timeout: &mut TC, sample: &S, rng: &mut RNG)
     where
-        V: Validate<C>,
+        V: EdgeValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
@@ -81,7 +83,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         start: PrmNodeId<Self>,
         goal: PrmNodeId<Self>,
     ) where
-        V: Validate<C>,
+        V: EdgeValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
@@ -102,7 +104,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
 
     pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<PrmNodeId<Self>>
     where
-        V: Validate<C>,
+        V: EdgeValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         C: Clone,
     {

@@ -1,4 +1,4 @@
-use crate::{time::Timeout, Interpolate, NearestNeighborsMap, Sample, Validate};
+use crate::{geo::Interpolate, time::Timeout, NearestNeighborsMap, Sample, Validate};
 use alloc::vec::Vec;
 
 pub struct Rrt<'a, C, NN, V> {
@@ -20,6 +20,8 @@ mod private {
 }
 use private::Node;
 
+use super::EdgeValidate;
+
 #[allow(clippy::too_many_arguments)]
 pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     start: C,
@@ -33,7 +35,7 @@ pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
 ) -> Option<Vec<C>>
 where
     NN: NearestNeighborsMap<C, Node> + Default,
-    V: Validate<C>,
+    V: EdgeValidate<C>,
     SP: Sample<C, RNG>,
     G: Sample<C, RNG>,
     R: Clone,
@@ -59,6 +61,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
     where
         NN: NearestNeighborsMap<C, Node>,
         C: Clone,
+        V: Validate<C>,
     {
         nn.insert(root.clone(), Node(0));
         Self {
@@ -80,7 +83,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        V: Validate<C>,
+        V: EdgeValidate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         NN: NearestNeighborsMap<C, Node>,
@@ -88,6 +91,9 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         C: Clone + Interpolate<Distance = R>,
         TG: Sample<bool, RNG>,
     {
+        if !self.valid.is_valid_configuration(&self.configurations[0]) {
+            return None; // invalid configuration
+        }
         let mut soln = None;
         while !timeout.is_over() {
             timeout.update_sample_count(1);
@@ -138,7 +144,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        V: Validate<C>,
+        V: EdgeValidate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,

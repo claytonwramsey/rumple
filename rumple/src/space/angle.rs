@@ -1,6 +1,6 @@
 use num_traits::{float::FloatCore, FloatConst, Zero};
 
-use crate::{nn::KdKey, Interpolate};
+use crate::{geo::Interpolate, nn::KdKey};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]
@@ -15,7 +15,6 @@ use crate::{nn::KdKey, Interpolate};
 pub struct Angle<T>(T);
 
 impl<T> Angle<T> {
-    #[cfg(feature = "std")]
     /// # Panics
     ///
     /// This function will panic if `T` is not between -pi and pi.
@@ -45,7 +44,8 @@ impl<T> Angle<T> {
     }
 
     /// Compute the signed distance from `self` to `other`.
-    /// Will be positive if the closest direction toward `other` is positive, and negative otherwise.
+    /// Will be positive if the closest direction toward `other` is positive, and negative
+    /// otherwise.
     pub fn signed_distance(self, other: Self) -> T
     where
         T: FloatCore + FloatConst,
@@ -121,13 +121,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use core::f32::consts::{PI, TAU};
+    use core::f32::consts::TAU;
 
     use crate::space::Angle;
 
     #[test]
     fn sign_dist() {
-        assert!((dbg!(Angle::new(0.0).signed_distance(Angle::new(TAU - 0.1)) + 0.1)).abs() < 1e-5);
+        assert!((Angle::new(0.0).signed_distance(Angle::new(TAU - 0.1)) + 0.1).abs() < 1e-5);
 
         assert!((Angle::new(TAU - 0.1).signed_distance(Angle::new(0.0)) - 0.1).abs() <= 1e-5);
 

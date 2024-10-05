@@ -5,13 +5,12 @@ use rand_chacha::ChaCha20Rng;
 use rumple::{
     env::World2d,
     float::{r64, R64},
-    geo::Rrt,
+    geo::{DiscreteValidate, Rrt},
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     sample::Rectangle,
     space::{Angle, Pose2d, PoseRadius, Vector, WeightedPoseDistance},
     time::Solved,
-    valid::SampleValidate,
 };
 
 fn main() {
@@ -42,7 +41,7 @@ fn main() {
     let half_w = 0.5;
     let half_h = 0.25;
 
-    let valid = SampleValidate::new(
+    let valid = DiscreteValidate::new(
         |&Pose2d {
              position: Vector([x, y]),
              angle,

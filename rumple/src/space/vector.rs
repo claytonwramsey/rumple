@@ -1,4 +1,4 @@
-use crate::{metric::SquaredEuclidean, nn::KdKey, Interpolate, Sample};
+use crate::{geo::Interpolate, metric::SquaredEuclidean, nn::KdKey, Sample};
 use core::{
     array,
     ops::{Deref, DerefMut, Sub},

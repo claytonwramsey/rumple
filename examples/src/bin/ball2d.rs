@@ -3,13 +3,12 @@ use rand_chacha::ChaCha20Rng;
 use rumple::{
     env::World2d,
     float::{r64, R64},
-    geo::Rrt,
+    geo::{DiscreteValidate, Rrt},
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     sample::Rectangle,
     space::Vector,
     time::Solved,
-    valid::SampleValidate,
     Metric,
 };
 
@@ -25,7 +24,7 @@ fn main() {
 
     let ball_r = 0.375;
 
-    let valid = SampleValidate::new(
+    let valid = DiscreteValidate::new(
         |rv: &Vector<2, R64>| !env.collides_ball(rv[0].into_inner(), rv[1].into_inner(), ball_r),
         r64(0.01),
     );
