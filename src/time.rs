@@ -1,4 +1,8 @@
+//! Timeout conditions.
+
+/// A timeout condition.
 pub trait Timeout {
+    /// Return `true` if this timeout condition is over.
     fn is_over(&self) -> bool;
 
     /// Update the number of attempted samples of the configuration space, incrementing by `_n`.
@@ -36,18 +40,26 @@ pub trait Timeout {
 /// ```
 pub struct Any<T>(pub T);
 
+/// A timeout condition that enables a planner to run forever.
 pub struct Forever;
 
+/// A timeout condition that terminates as soon as a problem has been solved.
 pub struct Solved(bool);
 
 #[cfg(feature = "std")]
 pub use alarm::Alarm;
 
+/// A timeout condition that limits the maximum number of samples that a planner can make.
+///
+/// A sample may or may not be a valid configuration.
 pub struct LimitSamples {
     current: usize,
     limit: usize,
 }
 
+/// A timeout condition that limits the maximum number of nodes that a planner can make.
+///
+/// A node is a valid configuration that is added to a planner's graph.
 pub struct LimitNodes {
     current: usize,
     limit: usize,
@@ -57,6 +69,7 @@ pub struct LimitNodes {
 macro_rules! any_tuple {
     () => {}; // This case is handled above by the trivial case
     ($($args:ident),*) => {
+        #[expect(clippy::allow_attributes)]
         impl<$($args: Timeout),*> Timeout for Any<($($args,)*)> {
             fn is_over(&self) -> bool {
                 #[allow(non_snake_case)]
@@ -119,21 +132,25 @@ mod alarm {
     use core::time::Duration;
     use std::time::Instant;
 
+    /// A timeout that ends after a fixed amount of time has elapsed.
     pub struct Alarm(Instant);
 
     impl Alarm {
         #[must_use]
         #[expect(clippy::missing_const_for_fn)]
+        /// Construct an alarm that will end at time `t`.
         pub fn ending_at(t: Instant) -> Self {
             Self(t)
         }
 
         #[must_use]
+        /// Construct an alarm that will end `d` time from now.
         pub fn from_now(d: Duration) -> Self {
             Self(Instant::now() + d)
         }
 
         #[must_use]
+        /// Construct an alarm that will end `s` seconds from now.
         pub fn secs_from_now(s: u64) -> Self {
             Self::from_now(Duration::from_secs(s))
         }
@@ -169,6 +186,7 @@ impl Timeout for Forever {
 
 impl LimitNodes {
     #[must_use]
+    /// Construct a timeout that limits a search to `n` nodes.
     pub const fn new(n: usize) -> Self {
         Self {
             current: 0,
@@ -179,6 +197,7 @@ impl LimitNodes {
 
 impl LimitSamples {
     #[must_use]
+    /// Construct a timeout that limits a search to `n` samples.
     pub const fn new(n: usize) -> Self {
         Self {
             current: 0,
@@ -219,6 +238,7 @@ impl Timeout for Solved {
 
 impl Solved {
     #[must_use]
+    /// Construct a timeout that runs until the problem is solved.
     pub const fn new() -> Self {
         Self(false)
     }

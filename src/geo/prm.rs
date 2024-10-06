@@ -1,11 +1,34 @@
 use alloc::collections::BinaryHeap;
-use core::{fmt::Debug, hash::Hash, iter, marker::PhantomData, mem::swap, ops::Add};
+use core::{fmt::Debug, hash::Hash, iter, mem::swap, ops::Add};
 
 use alloc::vec::Vec;
 use num_traits::Zero;
 
 use crate::{time::Timeout, Metric, RangeNearestNeighborsMap, Sample};
 
+/// Probabilistic roadmaps; a class of anytime geometric motion planner.
+///
+/// # Generic parameters
+///
+/// - `C`: The configurations of the robot.
+/// - `NN`: The nearest-neighbor data structure to use. To be useful, `NN` should implement
+///   [`RangeNearestNeighborsMap`].
+/// - `V`: The state validator. `V` should implement [`EdgeValidate`].
+///
+/// # Citation
+///
+/// ```bibtex
+/// @article{kavraki1996probabilistic,
+///   title={Probabilistic roadmaps for path planning in high-dimensional configuration spaces},
+///   author={Kavraki, Lydia E and Svestka, Petr and Latombe, J-C and Overmars, Mark H},
+///   journal={IEEE transactions on Robotics and Automation},
+///   volume={12},
+///   number={4},
+///   pages={566--580},
+///   year={1996},
+///   publisher={IEEE}
+/// }
+/// ```
 pub struct Prm<'a, C, NN, V> {
     /// List of configurations for each node.
     configurations: Vec<C>,
@@ -23,8 +46,10 @@ use private::Node;
 
 use super::EdgeValidate;
 
-#[allow(clippy::module_name_repetitions)]
-pub struct PrmNodeId<PRM>(usize, PhantomData<PRM>);
+#[expect(clippy::module_name_repetitions)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// The ID for a node in a [`Prm`].
+pub struct PrmNodeId(usize);
 
 #[derive(Clone, Debug)]
 /// A disjoint set forest.
@@ -53,6 +78,8 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         }
     }
 
+    /// Grow this PRM until `timeout` runs out, connecting all nodes within `radius` of one another.
+    /// Generated nodes will only be sampled from `sample` using `rng` as the source of randomness.
     pub fn grow_r<R, TC, S, RNG>(&mut self, radius: R, timeout: &mut TC, sample: &S, rng: &mut RNG)
     where
         V: EdgeValidate<C>,
@@ -80,8 +107,8 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         timeout: &mut TC,
         sample: &S,
         rng: &mut RNG,
-        start: PrmNodeId<Self>,
-        goal: PrmNodeId<Self>,
+        start: PrmNodeId,
+        goal: PrmNodeId,
     ) where
         V: EdgeValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
@@ -102,7 +129,10 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         }
     }
 
-    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<PrmNodeId<Self>>
+    /// Insert a configuration into the graph, connecting it to all other nodes in the graph within
+    /// a distance of `radius`. Returns the ID of the node it created, or `None` if the given
+    /// configuration was invalid.
+    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<PrmNodeId>
     where
         V: EdgeValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
@@ -134,10 +164,13 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
             self.configurations.len(),
             "configuration and edge buffers must have equal length"
         );
-        Some(PrmNodeId(i, PhantomData))
+        Some(PrmNodeId(i))
     }
 
-    pub fn configuration(&self, id: PrmNodeId<Self>) -> Option<&C> {
+    /// Get the configuration in the graph corresponding to the given node ID.
+    ///
+    /// Returns `None` if no such node with the given ID exists.
+    pub fn configuration(&self, id: PrmNodeId) -> Option<&C> {
         self.configurations.get(id.0)
     }
 
@@ -146,12 +179,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// # Panics
     ///
     /// This function may panic if `start` or `end` point to nodes which do not exist in `self`.
-    pub fn path<M, D>(
-        &self,
-        start: PrmNodeId<Self>,
-        end: PrmNodeId<Self>,
-        cost: &M,
-    ) -> Option<Vec<PrmNodeId<Self>>>
+    pub fn path<M, D>(&self, start: PrmNodeId, end: PrmNodeId, cost: &M) -> Option<Vec<PrmNodeId>>
     where
         M: Metric<C, Distance = D>,
         D: Add + Zero + Ord + Clone,
@@ -190,11 +218,11 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         while let Some(Open { node, .. }) = open.pop() {
             if node == start.0 {
                 // done
-                let mut traj = vec![PrmNodeId(start.0, PhantomData)];
+                let mut traj = vec![PrmNodeId(start.0)];
                 let mut n = start.0;
                 while n != end.0 {
                     n = parent[n];
-                    traj.push(PrmNodeId(n, PhantomData));
+                    traj.push(PrmNodeId(n));
                 }
                 return Some(traj);
             }
@@ -295,34 +323,6 @@ struct Open<D> {
     f_score: D,
     node: usize,
 }
-
-impl<T> Clone for PrmNodeId<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<T> Copy for PrmNodeId<T> {}
-
-impl<T> Debug for PrmNodeId<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl<T> Hash for PrmNodeId<T> {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
-
-impl<T> PartialEq for PrmNodeId<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<T> Eq for PrmNodeId<T> {}
 
 #[cfg(test)]
 mod tests {

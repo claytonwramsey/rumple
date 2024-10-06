@@ -36,6 +36,7 @@ impl<T> Angle<T> {
         Self(value)
     }
 
+    /// Get the internal value wrapped by this angle.
     pub const fn get(self) -> T
     where
         T: Copy,

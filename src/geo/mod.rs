@@ -11,13 +11,18 @@ mod prm;
 mod rrt;
 
 pub use prm::{Prm, PrmNodeId};
-pub use rrt::{rrt, Rrt};
+pub use rrt::{rrt, Rrt, RrtConnect};
 
+/// The trait for validating continous edges between configurations.
+/// Used by many geometric planners.
 pub trait EdgeValidate<C>: Validate<C> {
+    /// Determine whether the continuous transition between `start` and `end` is valid.
     fn is_valid_transition(&self, start: &C, end: &C) -> bool;
 }
 
+/// The trait for linear interpolation between configurations.
 pub trait Interpolate: Sized {
+    /// The radius to which interpolation may be limited.
     type Distance;
 
     #[expect(clippy::missing_errors_doc)]
@@ -33,31 +38,35 @@ pub trait Interpolate: Sized {
 /// An edge validator that determines validity by subsampling states along an edge.
 /// The user must provide an individual state validator (`F`) and a distance between each sample
 /// (`R`).
-pub struct DiscreteValidate<F, R> {
-    fun: F,
+///
+/// `V` should implement `Validate` for a desired configuration, and `R` must be a distance between
+/// two configurations.
+pub struct DiscreteValidate<V, R> {
+    valid: V,
     radius: R,
 }
 
-impl<F, R> DiscreteValidate<F, R> {
-    pub const fn new(fun: F, radius: R) -> Self {
-        Self { fun, radius }
+impl<V, R> DiscreteValidate<V, R> {
+    /// Construct a new validator.
+    pub const fn new(valid: V, radius: R) -> Self {
+        Self { valid, radius }
     }
 }
 
-impl<F, R, C> Validate<C> for DiscreteValidate<F, R>
+impl<V, R, C> Validate<C> for DiscreteValidate<V, R>
 where
-    F: Fn(&C) -> bool,
-    C: Interpolate<Distance = R>,
+    V: Validate<C>,
     R: Clone,
+    C: Interpolate<Distance = R>,
 {
     fn is_valid_configuration(&self, c: &C) -> bool {
-        (self.fun)(c)
+        self.valid.is_valid_configuration(c)
     }
 }
 
 impl<F, R, C> EdgeValidate<C> for DiscreteValidate<F, R>
 where
-    F: Fn(&C) -> bool,
+    F: Validate<C>,
     C: Interpolate<Distance = R>,
     R: Clone,
 {

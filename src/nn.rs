@@ -1,9 +1,15 @@
+//! Nearest-neighbor search.
+
 use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
 use alloc::{boxed::Box, vec::Vec};
 use core::{cmp::Ordering, fmt::Debug, marker::PhantomData};
 use num_traits::Zero;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// A nearest-neighbor map backed by a _k_-d tree.
+///
+/// This implementation is not particularly efficient, but it has support for spaces of weird
+/// topologies (such as [`crate::space::Angle`]).
 pub struct KdTreeMap<K, V, M> {
     root: Option<Node<K, V>>,
     metric: M,
@@ -20,15 +26,26 @@ pub struct Region<C> {
     pub hi: C,
 }
 
+/// The trait required to use a key in a [`KdTreeMap`].
 pub trait KdKey: Clone {
+    /// The dimension of the space.
     fn dimension() -> usize;
+    /// Compare `self` to `rhs` by their value along axis `k`.
     fn compare(&self, rhs: &Self, k: usize) -> Ordering;
+    /// Assign `self[k] = src[k]`.
     fn assign(&mut self, src: &Self, k: usize);
+    /// Get a configuration containing the lowest representable configuration by all axes.
     fn lower_bound() -> Self;
+    /// Get a configuration containing the highest representable configuration by all axes.
     fn upper_bound() -> Self;
 }
 
+/// A distance metric that can also return a point's distance to an AABB.
+///
+/// Required for [`KdTreeMap`].
 pub trait DistanceAabb<C>: Metric<C> {
+    /// Compute the distance between `c` and an AABB whose lowest corner is `aabb_lo` and whose
+    /// highest corner is `aabb_hi`.
     fn distance_to_aabb(&self, c: &C, aabb_lo: &C, aabb_hi: &C) -> Self::Distance;
 }
 
@@ -40,6 +57,7 @@ struct Node<K, V> {
 }
 
 impl<K, V, M> KdTreeMap<K, V, M> {
+    /// Construct a new `KdTreeMap` using the provided metric.
     pub const fn new(metric: M) -> Self {
         Self { root: None, metric }
     }
@@ -99,6 +117,7 @@ where
 }
 
 // TODO make this a resuming iterator
+/// An iterator over all points with a given radius of a query point in a [`KdTreeMap`].
 pub struct RangeNearest<'a, K, V, M>(Vec<&'a V>, PhantomData<&'a KdTreeMap<K, V, M>>);
 
 impl<'a, K, V, M> Iterator for RangeNearest<'a, K, V, M> {

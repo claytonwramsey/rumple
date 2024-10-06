@@ -5,6 +5,7 @@ use num_traits::float::FloatCore;
 #[cfg(feature = "std")]
 use num_traits::FloatConst;
 
+/// A 2-dimensional collision-checking environment.
 pub struct World2d<T = f64> {
     aabbs: Vec<Aabb<2, T>>,
     balls: Vec<Ball<2, T>>,
@@ -31,6 +32,11 @@ impl<T> World2d<T>
 where
     T: FloatCore,
 {
+    /// Determine whether a ball at position `(x, y)` with radius `r` collides with the world.
+    ///
+    /// # Panics
+    ///
+    /// This function may panic or give incorrect results if `r < 0.0`.
     pub fn collides_ball(&self, x: T, y: T, r: T) -> bool {
         debug_assert!(T::zero() <= r, "radius of ball must be positive");
         // todo use SIMD
@@ -56,6 +62,7 @@ where
         )
     }
 
+    /// Determine whether a point at position `(x, y)` collides with any geometry in this world.
     pub fn collides_point(&self, x: T, y: T) -> bool {
         self.aabbs.iter().any(
             |&Aabb {
@@ -69,11 +76,22 @@ where
         })
     }
 
+    /// Add a ball to this world at position `(x, y)` and radius `r`.
+    ///
+    /// # Panics
+    ///
+    /// This function may panic or produce incorrect results if `r < 0`.
     pub fn add_ball(&mut self, x: T, y: T, r: T) {
         debug_assert!(r >= T::zero(), "ball must have positive radius");
         self.balls.push(Ball { pos: [x, y], r });
     }
 
+    /// Add an axis-aligned bounding box to this world with bottom-left point at `(xl, yl)` and
+    /// upper-right point at `(xh, yh)`.
+    ///
+    /// # Panics
+    ///
+    /// This function may panic or produce incorrect results if `xl > xh` or `yl > yh`.
     pub fn add_aabb(&mut self, xl: T, yl: T, xh: T, yh: T) {
         debug_assert!(T::zero() <= xh - xl, "aabb must have positive width");
         debug_assert!(T::zero() <= yh - yl, "aabb must have positive height");
@@ -89,7 +107,7 @@ impl<T> World2d<T>
 where
     T: num_traits::Float + FloatConst + Copy + std::fmt::Debug,
 {
-    #[allow(clippy::similar_names)]
+    #[expect(clippy::similar_names)]
     /// Determine whether a rectangle collides with any object in this world.
     /// Returns `true` if the rectangle is in collision and `false` otherwise.
     ///

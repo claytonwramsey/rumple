@@ -1,3 +1,7 @@
+//! Implementations of custom floating point wrappers.
+//! These wrappers exist mostly due to the flaws of IEEE 754; namely, that IEEE 754 floats lack
+//! total order or algebraic closure.
+
 use core::{
     cmp::Ordering,
     fmt::Debug,
@@ -10,9 +14,13 @@ use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformFloat, Un
 
 #[repr(transparent)]
 #[derive(Clone, Copy, PartialEq, Hash)]
+/// `T`, except restricted to being valued as a real number.
 pub struct Real<T>(T);
 
+/// A 32-bit real float.
 pub type R32 = Real<f32>;
+
+/// A 64-bit real float.
 pub type R64 = Real<f64>;
 
 #[must_use]
@@ -36,12 +44,15 @@ pub fn r64(x: f64) -> R64 {
 }
 
 impl<T> Real<T> {
+    /// Construct a new `Real`, checking if `T` is finite.
     pub fn new(x: T) -> Option<Self>
     where
         T: FloatCore,
     {
         x.is_finite().then_some(Self(x))
     }
+
+    /// Retrieve the wrapped value.
     pub fn into_inner(self) -> T {
         self.0
     }
@@ -73,8 +84,11 @@ where
     }
 }
 
+/// The error cases for converting a `Real<T>` from a string with a fixed radix.
 pub enum FromStrRadixErr<T> {
+    /// The conversion for the wrapped type failed.
     Underlying(T),
+    /// The converted value was non-finite.
     NonFinite,
 }
 
@@ -224,17 +238,6 @@ where
     }
 }
 
-impl<T: FloatCore> Real<T> {
-    #[must_use]
-    pub fn abs(self) -> Self {
-        Self(self.0.abs())
-    }
-
-    pub fn is_zero(self) -> bool {
-        self.0.is_zero()
-    }
-}
-
 impl<T: FloatCore> Sub for Real<T> {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
@@ -330,6 +333,7 @@ impl SampleUniform for R64 {
     type Sampler = UniformReal<f64>;
 }
 
+/// The backend for implementing uniform samplers for floating-point types.
 pub struct UniformReal<X>(UniformFloat<X>);
 
 impl<X> UniformSampler for UniformReal<X>

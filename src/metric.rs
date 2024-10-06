@@ -1,3 +1,5 @@
+//! Distance metrics.
+
 use core::{array, cmp::min, iter::Sum};
 
 use crate::{
@@ -8,12 +10,16 @@ use crate::{
 use num_traits::{float::FloatCore, FloatConst};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// The squared-Euclidean distance metric, i.e. the sum of the squares along each axis.
 pub struct SquaredEuclidean;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// The Euclidean distance metric, i.e. the length of the line segment connecting two points.
 pub struct Euclidean;
 
 impl SquaredEuclidean {
+    /// Computer the distance between two vectors without requiring that the result be strictly
+    /// ordered.
     pub fn partial_distance<T, const N: usize>(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> T
     where
         T: FloatCore,

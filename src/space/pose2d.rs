@@ -7,8 +7,11 @@ use crate::{geo::Interpolate, nn::KdKey, Sample};
 use super::{Angle, PoseRadius, Vector};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// A pose in 2 dimensions.
 pub struct Pose2d<T> {
+    /// The translation vector.
     pub position: Vector<2, T>,
+    /// The orientation.
     pub angle: Angle<T>,
 }
 

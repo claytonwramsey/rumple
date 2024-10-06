@@ -1,3 +1,5 @@
+//! State spaces, or configuration spaces.
+
 mod angle;
 mod orient;
 mod pose2d;
@@ -13,20 +15,25 @@ pub use vector::Vector;
 use crate::{nn::DistanceAabb, Metric};
 use num_traits::{float::FloatCore, FloatConst};
 
-pub struct Product<T>(T);
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// A distance value between poses.
 pub struct PoseRadius<T> {
+    /// The angular distance between orientations.
     pub angle_dist: T,
+    /// The distance between translations.
     pub position_dist: T,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// A distance metric for poses that takes a weighted sum of their distance in position and angle
 pub struct WeightedPoseDistance<T, MP, MA> {
+    /// The metric for comparing positions.
     pub position_metric: MP,
+    /// The weight to apply to positions.
     pub position_weight: T,
+    /// The metric for comparing angles.
     pub angle_metric: MA,
+    /// The weight to apply to angles.
     pub angle_weight: T,
 }
 

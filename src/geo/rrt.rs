@@ -1,6 +1,28 @@
 use crate::{geo::Interpolate, time::Timeout, NearestNeighborsMap, Sample, Validate};
 use alloc::vec::Vec;
 
+/// A rapidly-exploring random tree: a geometric single-query sampling-based motion planner.
+///
+/// This is a simple implementation; you may want to alternately use [`RrtConnect`].
+///
+/// # Generic parameters
+///
+/// - `C` should be the configuration of a robot.
+/// - `NN` should be the nearest neighbors data structure, which can use `C` as a key and implement
+///   `NearestNeighborsMap`.
+/// - `V` should be a state validator; it must implement [`EdgeValidate`] for `C`.
+///
+/// # Citation
+///
+/// ```bibtex
+/// @article{lavalle1998rapidly,
+///   title={Rapidly-exploring random trees: A new tool for path planning},
+///   author={LaValle, Steven},
+///   journal={Research Report 9811},
+///   year={1998},
+///   publisher={Department of Computer Science, Iowa State University}
+/// }
+/// ```
 pub struct Rrt<'a, C, NN, V> {
     /// buffer of saved configurations
     /// configurations[0] is the root
@@ -22,7 +44,21 @@ use private::Node;
 
 use super::EdgeValidate;
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
+/// Plan between two configurations using an [`Rrt`].
+///
+/// # Parameters
+///
+/// - `start`: The start configuration.
+/// - `valid`: The state validator.
+/// - `space_sampler`: A sampler for states in the configuration space.
+/// - `goal`: The goal state or sampler for goal states.
+/// - `radius`: The radius by which to expand the RRT.
+/// - `timeout`: The timeout condition. The planning algorithm will continue until `timeout` is
+///   over.
+/// - `target_goal_distn`: A sampler which returns `true` with some probability; every time it
+///   returns `true`, the RRT grows toward the goal instead of to fill the space.
+/// - `rng`: The source of randomness.
 pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     start: C,
     valid: &V,
@@ -57,6 +93,8 @@ where
 }
 
 impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
+    /// Construct a new RRT rooted at `root`, using `nn` as its nearest-neighbor structure and
+    /// `valid` as its state validator.
     pub fn new(root: C, mut nn: NN, valid: &'a V) -> Self
     where
         NN: NearestNeighborsMap<C, Node>,
@@ -72,7 +110,6 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn grow_help<SP, G, TC: Timeout, TG, RNG, R>(
         &mut self,
         space_sampler: &SP,
@@ -133,7 +170,18 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         soln
     }
 
-    #[allow(clippy::too_many_arguments)]
+    /// Grow this RRT toward the provided goal `goal`.
+    ///
+    /// # Parameters
+    ///
+    /// - `space_sampler`: A sampler for states in the configuration space.
+    /// - `goal`: The goal state or sampler for goal states.
+    /// - `radius`: The radius by which to expand the RRT.
+    /// - `timeout`: The timeout condition. The planning algorithm will continue until `timeout` is
+    ///   over.
+    /// - `target_goal_distn`: A sampler which returns `true` with some probability; every time it
+    ///   returns `true`, the RRT grows toward the goal instead of to fill the space.
+    /// - `rng`: The source of randomness.
     pub fn grow_toward<SP, G, TC, TG, R, RNG>(
         &mut self,
         space_sampler: &SP,
@@ -165,7 +213,26 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         Some(traj)
     }
 
+    /// Get the number of total nodes in this tree.
     pub fn num_nodes(&self) -> usize {
         self.configurations.len()
     }
 }
+
+#[expect(clippy::module_name_repetitions)]
+/// A planner that combines two [`Rrt`]s growing toward each other.
+///
+/// # Citation
+///
+/// ```bibtex
+/// @inproceedings{kuffner2000rrt,
+///  title={RRT-connect: An efficient approach to single-query path planning},
+///  author={Kuffner, James J and LaValle, Steven M},
+///  booktitle={Proceedings 2000 ICRA. Millennium Conference. IEEE International Conference on Robotics and Automation. Symposia Proceedings (Cat. No. 00CH37065)},
+///  volume={2},
+///  pages={995--1001},
+///  year={2000},
+///  organization={IEEE}
+/// }
+/// ```
+pub struct RrtConnect {}

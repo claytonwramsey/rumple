@@ -6,9 +6,11 @@ use core::{
 use num_traits::float::FloatCore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// An `N`-dimensional vector of `T`.
 pub struct Vector<const N: usize, T = f64>(pub [T; N]);
 
 impl<T, const N: usize> Vector<N, T> {
+    /// Construct a new `Vector`.
     pub const fn new(x: [T; N]) -> Self {
         Self(x)
     }

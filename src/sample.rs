@@ -1,3 +1,5 @@
+//! Sampling distributions for states.
+
 use core::array;
 
 use crate::{
@@ -25,11 +27,16 @@ impl<RNG: Rng> Sample<bool, RNG> for Bernoulli {
     }
 }
 
+/// A rectangular prism of values of `T`.
+/// When used as [`Sample`], this rectangle inclusively samples all values.
 pub struct Rectangle<T> {
+    /// The lowest corner along all axes.
     pub min: T,
+    /// The highest corner along all axes.
     pub max: T,
 }
 
+/// A sampler for all possible values of a datum.
 pub struct Everywhere;
 
 impl<const N: usize, T, RNG: Rng> Sample<Vector<N, T>, RNG> for Rectangle<Vector<N, T>>
