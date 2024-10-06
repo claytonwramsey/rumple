@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use std::f64::consts::PI;
 
 use rand::{distributions::Bernoulli, SeedableRng};

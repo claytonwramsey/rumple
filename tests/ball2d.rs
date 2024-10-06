@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
