@@ -6,12 +6,13 @@ use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     env::World2d,
-    geo::{rrt, DiscreteValidate},
+    geo::rrt,
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     sample::Rectangle,
     space::{Angle, Pose2d, PoseRadius, Vector, WeightedPoseDistance},
     time::Solved,
+    valid::SampleInterpolate,
 };
 
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -51,7 +52,7 @@ fn geo_car() -> Vec<Pose2d> {
     let half_w = 0.5;
     let half_h = 0.25;
 
-    let valid = DiscreteValidate::new(
+    let valid = SampleInterpolate::new(
         |&Pose2d {
              position: Vector([x, y]),
              angle,

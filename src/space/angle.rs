@@ -1,6 +1,6 @@
 use num_traits::{float::FloatCore, FloatConst, Zero};
 
-use crate::{geo::Interpolate, nn::KdKey};
+use crate::{nn::KdKey, space::Interpolate};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(transparent)]

@@ -4,7 +4,7 @@ use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle, space::Vector,
-    time::Solved, AlwaysValid, Metric,
+    time::Solved, valid::AlwaysValid, Metric,
 };
 
 #[test]

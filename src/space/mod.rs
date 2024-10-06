@@ -75,3 +75,17 @@ where
                     .distance_to_aabb(&c.angle, &aabb_lo.angle, &aabb_hi.angle)
     }
 }
+
+/// The trait for linear interpolation between configurations.
+pub trait Interpolate: Sized {
+    /// The radius to which interpolation may be limited.
+    type Distance;
+
+    #[expect(clippy::missing_errors_doc)]
+    /// Attempt to grow from `self` to `goal`.
+    ///
+    /// Returns `Err(end)` if `self` and `end` are within `radius` of one another.
+    /// Returns `Ok(x)`, where `x` is within `radius` distance of `self` but along the direction
+    /// toward `end`.
+    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self>;
+}

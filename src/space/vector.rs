@@ -1,9 +1,11 @@
-use crate::{geo::Interpolate, metric::SquaredEuclidean, nn::KdKey, Sample};
+use crate::{metric::SquaredEuclidean, nn::KdKey, Sample};
 use core::{
     array,
     ops::{Deref, DerefMut, Sub},
 };
 use num_traits::float::FloatCore;
+
+use super::Interpolate;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// An `N`-dimensional vector of `T`.

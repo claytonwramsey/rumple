@@ -3,14 +3,8 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    env::World2d,
-    geo::{DiscreteValidate, Rrt},
-    metric::SquaredEuclidean,
-    nn::KdTreeMap,
-    sample::Rectangle,
-    space::Vector,
-    time::Solved,
-    Metric,
+    env::World2d, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle,
+    space::Vector, time::Solved, valid::SampleInterpolate, Metric,
 };
 
 #[test]
@@ -26,7 +20,7 @@ fn ball2d() {
 
     let ball_r = 0.375;
 
-    let valid = DiscreteValidate::new(
+    let valid = SampleInterpolate::new(
         |rv: &Vector<2, f64>| !env.collides_ball(rv[0], rv[1], ball_r),
         0.01,
     );

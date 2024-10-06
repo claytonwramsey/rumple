@@ -7,8 +7,6 @@
 #![warn(clippy::allow_attributes, reason = "prefer expect over allow")]
 // #![warn(missing_docs)]
 
-use geo::EdgeValidate;
-use kino::DynamicValidate;
 use num_traits::Zero;
 
 #[macro_use]
@@ -22,45 +20,7 @@ pub mod nn;
 pub mod sample;
 pub mod space;
 pub mod time;
-
-/// A trait for types that can determine whether a configuration is valid.
-///
-/// This could be implemented by (for example) a collision checker, joint limit tester, or a
-/// manifold constraint checker.
-pub trait Validate<C> {
-    /// Return `true` if the configuration is valid and `false` otherwise.
-    fn is_valid_configuration(&self, c: &C) -> bool;
-}
-
-impl<F, C> Validate<C> for F
-where
-    F: Fn(&C) -> bool,
-{
-    fn is_valid_configuration(&self, c: &C) -> bool {
-        self(c)
-    }
-}
-
-/// A validator for configurations which states that all configurations are valid.
-pub struct AlwaysValid;
-
-impl<C> Validate<C> for AlwaysValid {
-    fn is_valid_configuration(&self, _: &C) -> bool {
-        true
-    }
-}
-
-impl<C> EdgeValidate<C> for AlwaysValid {
-    fn is_valid_transition(&self, _: &C, _: &C) -> bool {
-        true
-    }
-}
-
-impl<P, C, U, D> DynamicValidate<P, C, U, D> for AlwaysValid {
-    fn is_valid_transition(&self, _: &P, _: &C, _: &U, _: D, _: &C) -> bool {
-        true
-    }
-}
+pub mod valid;
 
 /// A sampler for a configuration.
 ///

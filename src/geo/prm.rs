@@ -4,7 +4,7 @@ use core::{fmt::Debug, hash::Hash, iter, mem::swap, ops::Add};
 use alloc::vec::Vec;
 use num_traits::Zero;
 
-use crate::{time::Timeout, Metric, RangeNearestNeighborsMap, Sample};
+use crate::{time::Timeout, valid::GeoValidate, Metric, RangeNearestNeighborsMap, Sample};
 
 /// Probabilistic roadmaps; a class of anytime geometric motion planner.
 ///
@@ -44,8 +44,6 @@ mod private {
 }
 use private::Node;
 
-use super::EdgeValidate;
-
 #[expect(clippy::module_name_repetitions)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// The ID for a node in a [`Prm`].
@@ -82,7 +80,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// Generated nodes will only be sampled from `sample` using `rng` as the source of randomness.
     pub fn grow_r<R, TC, S, RNG>(&mut self, radius: R, timeout: &mut TC, sample: &S, rng: &mut RNG)
     where
-        V: EdgeValidate<C>,
+        V: GeoValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
@@ -110,7 +108,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         start: PrmNodeId,
         goal: PrmNodeId,
     ) where
-        V: EdgeValidate<C>,
+        V: GeoValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
@@ -134,7 +132,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// configuration was invalid.
     pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<PrmNodeId>
     where
-        V: EdgeValidate<C>,
+        V: GeoValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
         C: Clone,
     {
@@ -349,7 +347,8 @@ mod tests {
         sample::Rectangle,
         space::Vector,
         time::{LimitNodes, Solved},
-        AlwaysValid, Metric,
+        valid::AlwaysValid,
+        Metric,
     };
     use alloc::vec::Vec;
     use rand::SeedableRng;

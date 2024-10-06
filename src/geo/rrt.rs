@@ -1,4 +1,7 @@
-use crate::{geo::Interpolate, time::Timeout, NearestNeighborsMap, Sample, Validate};
+use crate::{
+    space::Interpolate, time::Timeout, valid::GeoValidate, valid::Validate, NearestNeighborsMap,
+    Sample,
+};
 use alloc::vec::Vec;
 
 /// A rapidly-exploring random tree: a geometric single-query sampling-based motion planner.
@@ -42,8 +45,6 @@ mod private {
 }
 use private::Node;
 
-use super::EdgeValidate;
-
 #[expect(clippy::too_many_arguments)]
 /// Plan between two configurations using an [`Rrt`].
 ///
@@ -72,7 +73,7 @@ pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
 ) -> Option<Vec<C>>
 where
     NN: NearestNeighborsMap<C, Node>,
-    V: EdgeValidate<C>,
+    V: GeoValidate<C>,
     SP: Sample<C, RNG>,
     G: Sample<C, RNG>,
     R: Clone,
@@ -121,7 +122,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         rng: &mut RNG,
     ) -> Option<usize>
     where
-        V: EdgeValidate<C>,
+        V: GeoValidate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         NN: NearestNeighborsMap<C, Node>,
@@ -193,7 +194,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         rng: &mut RNG,
     ) -> Option<Vec<C>>
     where
-        V: EdgeValidate<C>,
+        V: GeoValidate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,

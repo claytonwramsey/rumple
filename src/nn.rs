@@ -279,7 +279,8 @@ mod tests {
         metric::SquaredEuclidean,
         sample::Rectangle,
         space::{Pose2d, Vector, WeightedPoseDistance},
-        AlwaysValid, Sample,
+        valid::AlwaysValid,
+        Sample,
     };
 
     struct BruteForce<K, V, M> {
