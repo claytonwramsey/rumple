@@ -182,7 +182,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     pub fn path<M, D>(&self, start: PrmNodeId, end: PrmNodeId, cost: &M) -> Option<Vec<PrmNodeId>>
     where
         M: Metric<C, Distance = D>,
-        D: Add + Zero + Ord + Clone,
+        D: Add + Zero + PartialOrd + Clone,
     {
         // use A*
         assert!(
@@ -318,16 +318,32 @@ impl SetForest {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq)]
 struct Open<D> {
     f_score: D,
     node: usize,
 }
 
+impl<D: PartialEq> Eq for Open<D> {}
+impl<D: PartialOrd> PartialOrd for Open<D> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<D: PartialOrd + PartialEq> Ord for Open<D> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        let cmp = self.f_score.partial_cmp(&other.f_score).unwrap();
+        if cmp.is_eq() {
+            self.node.cmp(&other.node)
+        } else {
+            cmp
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        float::{r32, R32},
         metric::SquaredEuclidean,
         nn::KdTreeMap,
         sample::Rectangle,
@@ -343,17 +359,17 @@ mod tests {
 
     #[test]
     fn prm2d() {
-        let r = r32(0.05);
-        let mut prm: Prm<Vector<2, R32>, _, _> =
+        let r = 0.05;
+        let mut prm: Prm<Vector<2, f32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
-        let start = prm.insert_r(Vector::new([0.0, 0.0].map(r32)), r).unwrap();
-        let end = prm.insert_r(Vector::new([1.0, 1.0].map(r32)), r).unwrap();
+        let start = prm.insert_r(Vector::new([0.0, 0.0]), r).unwrap();
+        let end = prm.insert_r(Vector::new([1.0, 1.0]), r).unwrap();
         prm.grow_r(
             r,
             &mut LimitNodes::new(50),
             &Rectangle {
-                min: Vector::new([0.0; 2].map(r32)),
-                max: Vector::new([1.0; 2].map(r32)),
+                min: Vector::new([0.0; 2]),
+                max: Vector::new([1.0; 2]),
             },
             &mut ChaCha20Rng::seed_from_u64(2707),
         );
@@ -384,17 +400,17 @@ mod tests {
 
     #[test]
     fn prm_solved() {
-        let r = r32(0.05);
-        let mut prm: Prm<Vector<2, R32>, _, _> =
+        let r = 0.05;
+        let mut prm: Prm<Vector<2, f32>, _, _> =
             Prm::new(KdTreeMap::new(SquaredEuclidean), &AlwaysValid);
-        let start = prm.insert_r(Vector::new([0.0, 0.0].map(r32)), r).unwrap();
-        let end = prm.insert_r(Vector::new([1.0, 1.0].map(r32)), r).unwrap();
+        let start = prm.insert_r(Vector::new([0.0, 0.0]), r).unwrap();
+        let end = prm.insert_r(Vector::new([1.0, 1.0]), r).unwrap();
         prm.grow_r_solve(
             r,
             &mut Solved::new(),
             &Rectangle {
-                min: Vector::new([0.0; 2].map(r32)),
-                max: Vector::new([1.0; 2].map(r32)),
+                min: Vector::new([0.0; 2]),
+                max: Vector::new([1.0; 2]),
             },
             &mut ChaCha20Rng::seed_from_u64(2707),
             start,

@@ -15,7 +15,6 @@ use num_traits::Zero;
 extern crate alloc;
 
 pub mod env;
-pub mod float;
 pub mod geo;
 pub mod kino;
 pub mod metric;
@@ -74,7 +73,7 @@ pub trait Sample<C, RNG> {
 /// A metric between configurations.
 pub trait Metric<C> {
     /// The distance between configurations.
-    type Distance: Ord + Zero;
+    type Distance: PartialOrd + Zero;
 
     /// Compute the distance between `c1` and `c2`.
     fn distance(&self, c1: &C, c2: &C) -> Self::Distance;

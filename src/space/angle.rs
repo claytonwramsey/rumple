@@ -77,13 +77,13 @@ impl<T: FloatCore> Ord for Angle<T> {
     }
 }
 
-impl<T: Clone + Ord + FloatConst + Zero> KdKey for Angle<T> {
+impl<T: Clone + PartialOrd + FloatConst + Zero> KdKey for Angle<T> {
     fn dimension() -> usize {
         1
     }
 
     fn compare(&self, rhs: &Self, _: usize) -> core::cmp::Ordering {
-        self.0.cmp(&rhs.0)
+        unsafe { self.0.partial_cmp(&rhs.0).unwrap_unchecked() }
     }
 
     fn assign(&mut self, src: &Self, _: usize) {

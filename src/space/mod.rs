@@ -41,7 +41,7 @@ impl<T, MP, MA> Metric<Pose2d<T>> for WeightedPoseDistance<T, MP, MA>
 where
     MP: Metric<Vector<2, T>, Distance = T>,
     MA: Metric<Angle<T>, Distance = T>,
-    T: FloatCore + FloatConst + Ord,
+    T: FloatCore + FloatConst,
 {
     type Distance = T;
     fn distance(&self, c1: &Pose2d<T>, c2: &Pose2d<T>) -> Self::Distance {
@@ -55,7 +55,7 @@ impl<T, MP, MA> DistanceAabb<Pose2d<T>> for WeightedPoseDistance<T, MP, MA>
 where
     MP: DistanceAabb<Vector<2, T>, Distance = T>,
     MA: DistanceAabb<Angle<T>, Distance = T>,
-    T: FloatCore + FloatConst + Ord,
+    T: FloatCore + FloatConst,
 {
     fn distance_to_aabb(
         &self,

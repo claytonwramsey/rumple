@@ -80,14 +80,14 @@ impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for Vector<N, T> {
 
 impl<T, const N: usize> KdKey for Vector<N, T>
 where
-    T: Ord + Clone + FloatCore,
+    T: Clone + FloatCore,
 {
     fn assign(&mut self, src: &Self, k: usize) {
         self.0[k] = src.0[k];
     }
 
     fn compare(&self, rhs: &Self, k: usize) -> core::cmp::Ordering {
-        self.0[k].cmp(&rhs.0[k])
+        self.0[k].partial_cmp(&rhs.0[k]).unwrap()
     }
 
     fn dimension() -> usize {

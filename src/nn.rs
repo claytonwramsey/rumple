@@ -1,9 +1,10 @@
 //! Nearest-neighbor search.
 
-use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
 use alloc::{boxed::Box, vec::Vec};
 use core::{cmp::Ordering, fmt::Debug, marker::PhantomData};
 use num_traits::Zero;
+
+use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// A nearest-neighbor map backed by a _k_-d tree.
@@ -266,7 +267,6 @@ mod tests {
 
     use super::*;
     use crate::{
-        float::{r32, r64, R32, R64},
         metric::SquaredEuclidean,
         sample::Rectangle,
         space::{Pose2d, Vector, WeightedPoseDistance},
@@ -305,10 +305,10 @@ mod tests {
 
     fn build_tree<const N: usize>(
         points: &[[f64; N]],
-    ) -> KdTreeMap<Vector<N, R64>, (), SquaredEuclidean> {
+    ) -> KdTreeMap<Vector<N, f64>, (), SquaredEuclidean> {
         let mut t = KdTreeMap::new(SquaredEuclidean);
         for &point in points {
-            t.insert(Vector::new(point.map(r64)), ());
+            t.insert(Vector::new(point), ());
         }
         t
     }
@@ -322,15 +322,15 @@ mod tests {
     #[test]
     fn get_empty() {
         let t = build_tree(&[]);
-        assert_eq!(t.nearest(&Vector::new([0.0, 0.0].map(r64))), None);
+        assert_eq!(t.nearest(&Vector::new([0.0, 0.0])), None);
     }
 
     #[test]
     fn get_one() {
         let t = build_tree(&[[1.0, 1.0]]);
         assert_eq!(
-            t.nearest(&Vector::new([0.0, 0.0].map(r64))),
-            Some((&Vector::new([1.0, 1.0].map(r64)), &()))
+            t.nearest(&Vector::new([0.0, 0.0])),
+            Some((&Vector::new([1.0, 1.0]), &()))
         );
     }
 
@@ -339,8 +339,8 @@ mod tests {
         let t = build_tree(&[[1.0, 1.0], [1.5, 1.1], [-0.5, 0.5]]);
         // println!("{t:?}");
         assert_eq!(
-            t.nearest(&Vector::new([0.0, 0.0].map(r64))),
-            Some((&Vector::new([-0.5, 0.5].map(r64)), &()))
+            t.nearest(&Vector::new([0.0, 0.0])),
+            Some((&Vector::new([-0.5, 0.5]), &()))
         );
     }
 
@@ -348,7 +348,7 @@ mod tests {
     fn make_rrt() {
         use crate::geo::Rrt;
         let _rrt = Rrt::new(
-            Vector::new([r64(0.0)]),
+            Vector::new([0.0]),
             KdTreeMap::new(SquaredEuclidean),
             &AlwaysValid,
         );
@@ -358,8 +358,8 @@ mod tests {
     fn randomized_3d() {
         const N: usize = 3;
         let region = Rectangle {
-            min: Vector::new([r32(-10.0); N]),
-            max: Vector::new([r32(10.0); N]),
+            min: Vector::new([-10.0; N]),
+            max: Vector::new([10.0; N]),
         };
 
         let mut rng = ChaCha20Rng::seed_from_u64(2707);
@@ -371,7 +371,7 @@ mod tests {
         };
         let mut kdt = KdTreeMap::new(SquaredEuclidean);
         for _ in 0..2_000 {
-            let pt: Vector<N, R32> = region.sample(&mut rng);
+            let pt: Vector<N, f32> = region.sample(&mut rng);
             bf.insert(pt, ());
             kdt.insert(pt, ());
             let q = region.sample(&mut rng);
@@ -385,17 +385,17 @@ mod tests {
     #[test]
     fn pose2d() {
         let region = Rectangle {
-            min: Vector::new([r32(-10.0); 2]),
-            max: Vector::new([r32(10.0); 2]),
+            min: Vector::new([-10.0; 2]),
+            max: Vector::new([10.0; 2]),
         };
 
         let mut rng = ChaCha20Rng::seed_from_u64(2707);
 
         let m = WeightedPoseDistance {
             position_metric: SquaredEuclidean,
-            position_weight: r32(1.0),
+            position_weight: 1.0,
             angle_metric: SquaredEuclidean,
-            angle_weight: r32(1.0),
+            angle_weight: 1.0,
         };
         let mut bf = BruteForce {
             poses: Vec::new(),
@@ -404,7 +404,7 @@ mod tests {
         };
         let mut kdt = KdTreeMap::new(m);
         for _ in 0..2_000 {
-            let pt: Pose2d<R32> = region.sample(&mut rng);
+            let pt: Pose2d<f32> = region.sample(&mut rng);
             bf.insert(pt, ());
             kdt.insert(pt, ());
             let q = region.sample(&mut rng);

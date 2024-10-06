@@ -3,24 +3,25 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    float::r64, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle,
-    space::Vector, time::LimitNodes, AlwaysValid, Metric,
+    geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle, space::Vector,
+    time::LimitNodes, AlwaysValid, Metric,
 };
 
-fn main() {
+#[test]
+fn simple_rrt() {
     let mut rrt = Rrt::new(
-        Vector::new([0.0, 0.0].map(r64)),
+        Vector::new([0.0, 0.0]),
         KdTreeMap::new(SquaredEuclidean),
         &AlwaysValid,
     );
-    let radius = r64(0.05);
+    let radius = 0.05;
     let res = rrt
         .grow_toward(
             &Rectangle {
-                min: Vector::new([0.0, 1.1].map(r64)),
-                max: Vector::new([0.0, 1.1].map(r64)),
+                min: Vector::new([0.0, 1.1]),
+                max: Vector::new([0.0, 1.1]),
             },
-            &Vector::new([1.0, 1.0].map(r64)),
+            &Vector::new([1.0, 1.0]),
             radius,
             &mut LimitNodes::new(10_000),
             &Bernoulli::new(0.05).unwrap(),
