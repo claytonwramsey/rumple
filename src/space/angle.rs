@@ -12,7 +12,7 @@ use crate::{geo::Interpolate, nn::KdKey};
 /// You might be tempted to model orientations in 3D using a product of 3 `Angle`s.
 /// **This is a bad idea!**
 /// You should instead use a [`crate::space::Orient`] for 3D rotation instead.
-pub struct Angle<T>(T);
+pub struct Angle<T = f64>(T);
 
 impl<T> Angle<T> {
     /// # Panics

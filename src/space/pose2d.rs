@@ -8,7 +8,7 @@ use super::{Angle, PoseRadius, Vector};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// A pose in 2 dimensions.
-pub struct Pose2d<T> {
+pub struct Pose2d<T = f64> {
     /// The translation vector.
     pub position: Vector<2, T>,
     /// The orientation.

@@ -6,7 +6,7 @@ use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     env::World2d,
-    geo::{DiscreteValidate, Rrt},
+    geo::{rrt, DiscreteValidate},
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     sample::Rectangle,
@@ -14,8 +14,16 @@ use rumple::{
     time::Solved,
 };
 
-#[test]
-fn geo_car() {
+use criterion::{criterion_group, criterion_main, Criterion};
+
+fn bench_geo_car(c: &mut Criterion) {
+    c.bench_function("geo_car", |b| b.iter(geo_car));
+}
+
+criterion_group!(gcar, bench_geo_car);
+criterion_main!(gcar);
+
+fn geo_car() -> Vec<Pose2d> {
     let mut env = World2d::new();
     // left bug trap
     env.add_aabb(0.0, 0.0, 4.0, 1.0);
@@ -47,7 +55,7 @@ fn geo_car() {
         |&Pose2d {
              position: Vector([x, y]),
              angle,
-         }: &Pose2d<f64>| { !env.collides_rect(x, y, angle.get(), half_w, half_h) },
+         }: &Pose2d| { !env.collides_rect(x, y, angle.get(), half_w, half_h) },
         PoseRadius {
             angle_dist: PI / 180.0,
             position_dist: 0.01,
@@ -58,7 +66,8 @@ fn geo_car() {
         angle_dist: PI / 4.0,
         position_dist: 2.0,
     };
-    let mut rrt = Rrt::new(
+
+    rrt(
         start,
         KdTreeMap::new(WeightedPoseDistance {
             position_metric: SquaredEuclidean,
@@ -67,21 +76,15 @@ fn geo_car() {
             angle_weight: 1.0,
         }),
         &valid,
-    );
-    let traj = rrt
-        .grow_toward(
-            &Rectangle {
-                min: Vector::new([-2.0; 2]),
-                max: Vector::new([11.0; 2]),
-            },
-            &goal,
-            grow_radius,
-            &mut Solved::new(),
-            &Bernoulli::new(0.2).unwrap(),
-            &mut ChaCha20Rng::seed_from_u64(2707),
-        )
-        .unwrap();
-
-    println!("Created {} nodes", rrt.num_nodes());
-    println!("{traj:?}");
+        &Rectangle {
+            min: Vector::new([-2.0; 2]),
+            max: Vector::new([11.0; 2]),
+        },
+        &goal,
+        grow_radius,
+        &mut Solved::new(),
+        &Bernoulli::new(0.2).unwrap(),
+        &mut ChaCha20Rng::seed_from_u64(2707),
+    )
+    .unwrap()
 }

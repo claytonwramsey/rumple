@@ -61,6 +61,7 @@ use super::EdgeValidate;
 /// - `rng`: The source of randomness.
 pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     start: C,
+    nn: NN,
     valid: &V,
     space_sampler: &SP,
     goal: &G,
@@ -70,7 +71,7 @@ pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     rng: &mut RNG,
 ) -> Option<Vec<C>>
 where
-    NN: NearestNeighborsMap<C, Node> + Default,
+    NN: NearestNeighborsMap<C, Node>,
     V: EdgeValidate<C>,
     SP: Sample<C, RNG>,
     G: Sample<C, RNG>,
@@ -79,7 +80,7 @@ where
     TC: Timeout,
     TG: Sample<bool, RNG>,
 {
-    let mut rrt = Rrt::new(start, NN::default(), valid);
+    let mut rrt = Rrt::new(start, nn, valid);
     let mut id = rrt.grow_help(space_sampler, goal, radius, timeout, target_goal_distn, rng)?;
     let mut traj = Vec::new();
     while id != 0 {

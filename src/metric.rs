@@ -116,3 +116,15 @@ where
         Euclidean.distance_to_aabb(c, aabb_lo, aabb_hi).powi(2)
     }
 }
+
+impl Default for SquaredEuclidean {
+    fn default() -> Self {
+        Self
+    }
+}
+
+impl Default for Euclidean {
+    fn default() -> Self {
+        Self
+    }
+}

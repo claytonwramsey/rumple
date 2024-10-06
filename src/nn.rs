@@ -260,6 +260,15 @@ where
     }
 }
 
+impl<K, V, M> Default for KdTreeMap<K, V, M>
+where
+    M: Default,
+{
+    fn default() -> Self {
+        Self::new(M::default())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rand::SeedableRng;
