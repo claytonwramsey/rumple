@@ -222,6 +222,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
 }
 
 #[expect(clippy::module_name_repetitions)]
+#[derive(Clone, Debug)]
 /// A planner that combines two [`Rrt`]s growing toward each other.
 ///
 /// # Citation
@@ -237,4 +238,61 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
 ///  organization={IEEE}
 /// }
 /// ```
-pub struct RrtConnect {}
+pub struct RrtConnect<'a, C, NN, V> {
+    trees: [HalfTree<C, NN>; 2],
+    valid: &'a V,
+    next: u8,
+}
+
+#[derive(Clone, Debug)]
+struct HalfTree<C, NN> {
+    configurations: Vec<C>,
+    parents: Vec<usize>,
+    nn: NN,
+}
+
+impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
+    pub fn new(mut nn: NN, start: C, goal: C, valid: &'a V) -> Self
+    where
+        NN: Clone + NearestNeighborsMap<C, Node>,
+        C: Clone,
+    {
+        let mut nn1 = nn.clone();
+        nn.insert(start.clone(), Node(0));
+        nn1.insert(goal.clone(), Node(0));
+        Self {
+            trees: [
+                HalfTree {
+                    configurations: vec![start],
+                    parents: vec![0],
+                    nn,
+                },
+                HalfTree {
+                    configurations: vec![goal],
+                    parents: vec![0],
+                    nn: nn1,
+                },
+            ],
+            valid,
+            next: 0,
+        }
+    }
+
+    pub fn grow<SP, TC, R, RNG>(
+        &mut self,
+        space_sampler: &SP,
+        radius: R,
+        timeout: &mut TC,
+        rng: &mut RNG,
+    ) -> Option<Vec<C>>
+    where
+        V: GeoValidate<C>,
+        SP: Sample<C, RNG>,
+        TC: Timeout,
+        NN: NearestNeighborsMap<C, Node>,
+        R: Clone,
+        C: Clone + Interpolate<Distance = R>,
+    {
+        todo!()
+    }
+}
