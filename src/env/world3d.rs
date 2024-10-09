@@ -2,7 +2,10 @@ use alloc::vec::Vec;
 use num_traits::float::FloatCore;
 
 #[cfg(feature = "simd")]
-use std::simd::{LaneCount, Simd, SupportedLaneCount};
+use core::{
+    ops::{Add, Mul, Sub},
+    simd::{prelude::*, LaneCount, Simd, SimdElement, SupportedLaneCount},
+};
 
 use super::{Aabb, Ball};
 
@@ -80,73 +83,63 @@ impl<T> World3d<T> {
             },
         )
     }
+
+    #[cfg(feature = "simd")]
+    pub fn collides_balls<const L: usize>(
+        &self,
+        xs: Simd<T, L>,
+        ys: Simd<T, L>,
+        zs: Simd<T, L>,
+        rs: Simd<T, L>,
+    ) -> bool
+    where
+        T: SimdElement + FloatCore,
+        Simd<T, L>: Add<Output = Simd<T, L>>
+            + Sub<Output = Simd<T, L>>
+            + Mul<Output = Simd<T, L>>
+            + SimdPartialOrd
+            + SimdPartialEq<Mask = Mask<T::Mask, L>>
+            + SimdFloat,
+        LaneCount<L>: SupportedLaneCount,
+    {
+        let rsqs = rs * rs;
+        self.balls.iter().any(
+            |&Ball {
+                 pos: [xb, yb, zb],
+                 r: rb,
+             }| {
+                let xdiff = Simd::splat(xb) - xs;
+                let ydiff = Simd::splat(yb) - ys;
+                let zdiff = Simd::splat(zb) - zs;
+                let rplus = Simd::splat(rb) + rs;
+                (xdiff * xdiff + ydiff * ydiff + zdiff * zdiff)
+                    .simd_le(rplus * rplus)
+                    .any()
+            },
+        ) || self.aabbs.iter().any(
+            |&Aabb {
+                 los: [xl, yl, zl],
+                 his: [xh, yh, zh],
+             }| {
+                let xl = Simd::splat(xl);
+                let xh = Simd::splat(xh);
+                let xdiff = Simd::splat(T::zero()).simd_max(xl - xs).simd_max(xs - xh);
+
+                let yl = Simd::splat(yl);
+                let yh = Simd::splat(yh);
+                let ydiff = Simd::splat(T::zero()).simd_max(yl - ys).simd_max(ys - yh);
+
+                let zl = Simd::splat(zl);
+                let zh = Simd::splat(zh);
+                let zdiff = Simd::splat(T::zero()).simd_max(zl - zs).simd_max(zs - zh);
+
+                (xdiff * xdiff + ydiff * ydiff + zdiff * zdiff)
+                    .simd_le(rsqs)
+                    .any()
+            },
+        )
+    }
 }
-
-macro_rules! simd_impl {
-    ($name: ident, $t: ty) => {
-        #[cfg(feature = "simd")]
-        impl World3d<$t> {
-            pub fn $name<const L: usize>(
-                &self,
-                xs: Simd<$t, L>,
-                ys: Simd<$t, L>,
-                zs: Simd<$t, L>,
-                rs: Simd<$t, L>,
-            ) -> bool
-            where
-                LaneCount<L>: SupportedLaneCount,
-            {
-                use std::simd::cmp::SimdPartialOrd;
-
-                let rsqs = rs * rs;
-                self.balls.iter().any(
-                    |&Ball {
-                         pos: [xb, yb, zb],
-                         r: rb,
-                     }| {
-                        let xdiff = Simd::splat(xb) - xs;
-                        let ydiff = Simd::splat(yb) - ys;
-                        let zdiff = Simd::splat(zb) - zs;
-                        let rplus = Simd::splat(rb) + rs;
-                        (xdiff * xdiff + ydiff * ydiff + zdiff * zdiff)
-                            .simd_le(rplus * rplus)
-                            .any()
-                    },
-                ) || self.aabbs.iter().any(
-                    |&Aabb {
-                         los: [xl, yl, zl],
-                         his: [xh, yh, zh],
-                     }| {
-                        let xl = Simd::splat(xl);
-                        let xh = Simd::splat(xh);
-                        let xdiff = xs
-                            .simd_lt(xl)
-                            .select(xl - xs, xs.simd_gt(xh).select(xs - xh, Simd::splat(0.0)));
-
-                        let yl = Simd::splat(yl);
-                        let yh = Simd::splat(yh);
-                        let ydiff = ys
-                            .simd_lt(yl)
-                            .select(yl - ys, ys.simd_gt(yh).select(ys - yh, Simd::splat(0.0)));
-
-                        let zl = Simd::splat(zl);
-                        let zh = Simd::splat(zh);
-                        let zdiff = zs
-                            .simd_lt(zl)
-                            .select(zl - zs, zs.simd_gt(zh).select(zs - zh, Simd::splat(0.0)));
-
-                        (xdiff * xdiff + ydiff * ydiff + zdiff * zdiff)
-                            .simd_le(rsqs)
-                            .any()
-                    },
-                )
-            }
-        }
-    };
-}
-
-simd_impl!(collides_balls_f32, f32);
-simd_impl!(collides_balls_f64, f64);
 
 impl<T> Default for World3d<T> {
     fn default() -> Self {
@@ -170,13 +163,13 @@ mod tests {
 
         let mut world = World3d::new();
 
-        assert!(!world.collides_balls_f64(xs, ys, zs, rs));
+        assert!(!world.collides_balls(xs, ys, zs, rs));
         world.add_ball(1.25, 1.0, 1.0, 0.25);
-        assert!(world.collides_balls_f64(xs, ys, zs, rs));
+        assert!(world.collides_balls(xs, ys, zs, rs));
 
         world = World3d::new();
 
         world.add_aabb(-0.1, -0.1, -0.1, 0.1, 0.1, 0.1);
-        assert!(world.collides_balls_f64(xs, ys, zs, rs));
+        assert!(world.collides_balls(xs, ys, zs, rs));
     }
 }
