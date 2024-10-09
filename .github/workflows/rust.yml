@@ -58,7 +58,7 @@ jobs:
                     - windows-latest
                     - macOS-latest
                 toolchain:
-                    - std
+                    - stable
                 cargo_flags:
                     - "--no-default-features"
                     - "-F std"
