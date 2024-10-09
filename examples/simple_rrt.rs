@@ -1,5 +1,3 @@
-#![cfg(feature = "std")]
-
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
@@ -29,8 +27,11 @@ fn main() {
         )
         .unwrap();
 
-    println!("Created {} nodes", rrt.num_nodes());
-    println!("{res:?}");
+    #[cfg(feature = "std")]
+    {
+        println!("Created {} nodes", rrt.num_nodes());
+        println!("{res:?}");
+    }
     assert!(
         res.windows(2)
             .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= radius),

@@ -1,5 +1,3 @@
-#![cfg(feature = "std")]
-
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
@@ -41,8 +39,11 @@ fn main() {
         )
         .unwrap();
 
-    println!("Created {} nodes", rrt.num_nodes());
-    println!("{traj:?}");
+    #[cfg(feature = "std")]
+    {
+        println!("Created {} nodes", rrt.num_nodes());
+        println!("{traj:?}");
+    }
     assert!(
         traj.windows(2)
             .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= grow_radius),
