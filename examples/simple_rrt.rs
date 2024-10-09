@@ -7,8 +7,8 @@ use rumple::{
     time::Solved, valid::AlwaysValid, Metric,
 };
 
-#[test]
-fn simple_rrt() {
+#[cfg_attr(test, test)]
+fn main() {
     let mut rrt = Rrt::new(
         Vector::new([0.0, 0.0]),
         KdTreeMap::new(SquaredEuclidean),

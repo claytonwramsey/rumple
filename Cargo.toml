@@ -23,3 +23,11 @@ harness = false
 [profile.bench]
 lto = true
 debug = true
+
+[[example]]
+name = "ball2d"
+test = true
+
+[[example]]
+name = "simple_rrt"
+test = true

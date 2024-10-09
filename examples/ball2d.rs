@@ -7,8 +7,8 @@ use rumple::{
     space::Vector, time::Solved, valid::SampleInterpolate, Metric,
 };
 
-#[test]
-fn ball2d() {
+#[cfg_attr(test, test)]
+fn main() {
     let mut env = World2d::new();
     env.add_aabb(-1.0, 0.0, -0.5, 1.0);
     env.add_aabb(0.5, 0.0, 1.0, 1.0);
