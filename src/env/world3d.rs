@@ -121,17 +121,17 @@ impl<T> World3d<T> {
                  los: [xl, yl, zl],
                  his: [xh, yh, zh],
              }| {
-                let xl = Simd::splat(xl);
-                let xh = Simd::splat(xh);
-                let xdiff = Simd::splat(T::zero()).simd_max(xl - xs).simd_max(xs - xh);
+                let xdiff = Simd::splat(T::zero())
+                    .simd_max(Simd::splat(xl) - xs)
+                    .simd_max(xs - Simd::splat(xh));
 
-                let yl = Simd::splat(yl);
-                let yh = Simd::splat(yh);
-                let ydiff = Simd::splat(T::zero()).simd_max(yl - ys).simd_max(ys - yh);
+                let ydiff = Simd::splat(T::zero())
+                    .simd_max(Simd::splat(yl) - ys)
+                    .simd_max(ys - Simd::splat(yh));
 
-                let zl = Simd::splat(zl);
-                let zh = Simd::splat(zh);
-                let zdiff = Simd::splat(T::zero()).simd_max(zl - zs).simd_max(zs - zh);
+                let zdiff = Simd::splat(T::zero())
+                    .simd_max(Simd::splat(zl) - zs)
+                    .simd_max(zs - Simd::splat(zh));
 
                 (xdiff * xdiff + ydiff * ydiff + zdiff * zdiff)
                     .simd_le(rsqs)
