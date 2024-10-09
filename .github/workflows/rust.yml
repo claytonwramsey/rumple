@@ -4,28 +4,44 @@ on:
   push:
     branches: ["master"]
   pull_request:
-    branches: ["master"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build_no_std:
-    runs-on: ubuntu-latest
-
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+        toolchain:
+          - nightly
+        cargo_flags:
+          - "--no-default-features"
+          - "--all-features"
     steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        run: cargo build --verbose --no-default-features
-      - name: Run tests
-        run: cargo test --verbose --no-default-features
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-  build_std:
-    runs-on: ubuntu-latest
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-    steps:
-      - uses: actions/checkout@v4
       - name: Build
-        run: cargo build --verbose --features std
-      - name: Run tests
-        run: cargo test --verbose --features std
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all ${{ matrix.cargo_flags }}
+
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all ${{ matrix.cargo_flags }}
