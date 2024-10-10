@@ -1,6 +1,6 @@
 use super::{Aabb, Ball};
 use alloc::vec::Vec;
-use num_traits::float::FloatCore;
+use num_traits::float::{FloatConst, FloatCore};
 
 /// A 2-dimensional collision-checking environment.
 pub struct World2d<T = f64> {
@@ -101,7 +101,7 @@ where
 
 impl<T> World2d<T>
 where
-    T: num_traits::Float + num_traits::FloatConst + Copy,
+    T: FloatConst + Copy + num_traits::Float,
 {
     #[expect(clippy::similar_names)]
     /// Determine whether a rectangle collides with any object in this world.
