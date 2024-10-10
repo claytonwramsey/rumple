@@ -16,16 +16,19 @@ std = ["num-traits/std"]
 simd = []
 
 [dev-dependencies]
-criterion = { version = "0.5.1", default-features = false }
+brunch = { version = "0.6.1", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
+
+[profile.bench]
+debug = true
+codegen-units = 32
+
+[profile.test]
+codegen-units = 32
 
 [[bench]]
 name = "geo_car"
 harness = false
-
-[profile.bench]
-lto = true
-debug = true
 
 [[example]]
 name = "ball2d"
