@@ -2,9 +2,6 @@ use super::{Aabb, Ball};
 use alloc::vec::Vec;
 use num_traits::float::FloatCore;
 
-#[cfg(feature = "std")]
-use num_traits::FloatConst;
-
 /// A 2-dimensional collision-checking environment.
 pub struct World2d<T = f64> {
     aabbs: Vec<Aabb<2, T>>,
