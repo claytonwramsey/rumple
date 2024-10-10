@@ -64,7 +64,7 @@ fn main() {
         inline:
         Bench::new("geo_car_rrtc")
             .with_samples(1000)
-            .run(|| rrt_connect(
+            .run(|| black_box(rrt_connect(
                 black_box(start),
                 black_box(goal),
                 KdTreeMap::new(WeightedPoseDistance {
@@ -82,7 +82,7 @@ fn main() {
                 &mut Solved::new(),
                 &mut black_box(ChaCha20Rng::seed_from_u64(2707)),
             )
-            .unwrap()
+            .unwrap())
         )
     )
 }
