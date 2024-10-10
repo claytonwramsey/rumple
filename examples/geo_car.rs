@@ -1,12 +1,9 @@
-#![cfg(feature = "std")]
-
-use std::f64::consts::PI;
-
+use num_traits::FloatConst;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     env::World2d,
-    geo::rrt_connect,
+    geo::RrtConnect,
     metric::SquaredEuclidean,
     nn::KdTreeMap,
     sample::Rectangle,
@@ -15,16 +12,7 @@ use rumple::{
     valid::SampleInterpolate,
 };
 
-use criterion::{criterion_group, criterion_main, Criterion};
-
-fn bench_geo_car(c: &mut Criterion) {
-    c.bench_function("geo_car", |b| b.iter(geo_car));
-}
-
-criterion_group!(gcar, bench_geo_car);
-criterion_main!(gcar);
-
-fn geo_car() -> Vec<Pose2d> {
+fn main() {
     let mut env = World2d::new();
     // left bug trap
     env.add_aabb(0.0, 0.0, 4.0, 1.0);
@@ -42,11 +30,11 @@ fn geo_car() -> Vec<Pose2d> {
 
     let start = Pose2d {
         position: Vector([2.0, 3.0]),
-        angle: Angle::new(PI / 2.0),
+        angle: Angle::new(f64::PI() / 2.0),
     };
     let goal = Pose2d {
         position: Vector([7.0, 3.0]),
-        angle: Angle::new(PI / 2.0),
+        angle: Angle::new(f64::PI() / 2.0),
     };
 
     let half_w = 0.5;
@@ -58,33 +46,43 @@ fn geo_car() -> Vec<Pose2d> {
              angle,
          }: &Pose2d| { !env.collides_rect(x, y, angle.get(), half_w, half_h) },
         PoseRadius {
-            angle_dist: PI / 180.0,
+            angle_dist: f64::PI() / 180.0,
             position_dist: 0.01,
         },
     );
 
     let grow_radius = PoseRadius {
-        angle_dist: PI / 4.0,
+        angle_dist: f64::PI() / 4.0,
         position_dist: 2.0,
     };
 
-    rrt_connect(
-        start,
-        goal,
+    let mut rrtc = RrtConnect::new(
         KdTreeMap::new(WeightedPoseDistance {
             position_metric: SquaredEuclidean,
             position_weight: 1.0,
             angle_metric: SquaredEuclidean,
             angle_weight: 1.0,
         }),
+        start,
+        goal,
         &valid,
-        &Rectangle {
-            min: Vector::new([-2.0; 2]),
-            max: Vector::new([11.0; 2]),
-        },
-        grow_radius,
-        &mut Solved::new(),
-        &mut ChaCha20Rng::seed_from_u64(2707),
-    )
-    .unwrap()
+    );
+
+    let traj = rrtc
+        .grow(
+            &Rectangle {
+                min: Vector::new([-2.0; 2]),
+                max: Vector::new([11.0; 2]),
+            },
+            grow_radius,
+            &mut Solved::new(),
+            &mut ChaCha20Rng::seed_from_u64(2707),
+        )
+        .unwrap();
+
+    #[cfg(feature = "std")]
+    {
+        println!("Created {} nodes", rrtc.num_nodes());
+        println!("{traj:?}");
+    }
 }

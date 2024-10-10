@@ -102,10 +102,9 @@ where
     }
 }
 
-#[cfg(feature = "std")]
 impl<T> World2d<T>
 where
-    T: num_traits::Float + FloatConst + Copy + std::fmt::Debug,
+    T: num_traits::Float + num_traits::FloatConst + Copy,
 {
     #[expect(clippy::similar_names)]
     /// Determine whether a rectangle collides with any object in this world.

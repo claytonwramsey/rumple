@@ -7,6 +7,8 @@
 
 mod prm;
 mod rrt;
+mod rrtc;
 
 pub use prm::{Prm, PrmNodeId};
-pub use rrt::{rrt, Rrt, RrtConnect};
+pub use rrt::{rrt, Rrt};
+pub use rrtc::{rrt_connect, RrtConnect};
