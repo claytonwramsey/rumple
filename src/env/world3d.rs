@@ -9,6 +9,7 @@ use core::{
 
 use super::{Aabb, Ball};
 
+#[derive(Clone, Debug)]
 pub struct World3d<T> {
     balls: Vec<Ball<3, T>>,
     aabbs: Vec<Aabb<3, T>>,

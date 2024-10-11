@@ -30,6 +30,10 @@ codegen-units = 32
 name = "geo_car"
 harness = false
 
+[[bench]]
+name = "geo_maze3d"
+harness = false
+
 [[example]]
 name = "ball2d"
 test = true
