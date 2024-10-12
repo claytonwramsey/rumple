@@ -4,7 +4,30 @@ use alloc::{boxed::Box, vec::Vec};
 use core::{cmp::Ordering, fmt::Debug, marker::PhantomData};
 use num_traits::Zero;
 
-use crate::{Metric, NearestNeighborsMap, RangeNearestNeighborsMap};
+use crate::metric::Metric;
+
+/// A key-value map which is capable of nearest-neighbor search.
+pub trait NearestNeighborsMap<K, V> {
+    /// Insert a key into the map.
+    fn insert(&mut self, key: K, value: V);
+    /// Get the nearest element of the space to this key.
+    fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)>;
+}
+
+/// A key-value map which is capable of range nearest-neighbor search.
+pub trait RangeNearestNeighborsMap<K, V>: NearestNeighborsMap<K, V> {
+    /// The radius of a ball to search.
+    type Distance;
+
+    /// An iterator over configurations within a fixed radius of a query.
+    type RangeNearest<'q>: Iterator<Item = &'q V>
+    where
+        V: 'q,
+        Self: 'q;
+
+    /// Get an iterator over all items in `self` within range `r` of
+    fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q>;
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// A nearest-neighbor map backed by a _k_-d tree.
@@ -277,10 +300,9 @@ mod tests {
     use super::*;
     use crate::{
         metric::SquaredEuclidean,
-        sample::Rectangle,
+        sample::{Rectangle, Sample},
         space::{Pose2d, Vector, WeightedPoseDistance},
         valid::AlwaysValid,
-        Sample,
     };
 
     struct BruteForce<K, V, M> {

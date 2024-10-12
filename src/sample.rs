@@ -2,15 +2,20 @@
 
 use core::array;
 
-use crate::{
-    space::{Angle, Pose2d, Vector},
-    Sample,
-};
+use crate::space::{Angle, Pose2d, Vector};
 use num_traits::{float::FloatCore, FloatConst};
 use rand::{
     distributions::{uniform::SampleUniform, Bernoulli, Distribution},
     Rng,
 };
+
+/// A sampler for a configuration.
+///
+/// `C` is the type of the configuration, and `RNG` is a source of randomness.
+pub trait Sample<C, RNG> {
+    /// Sample a configuration, using `rng` as a source of randomness.
+    fn sample(&self, rng: &mut RNG) -> C;
+}
 
 impl<A, B, S, RNG> Sample<(A, B), RNG> for S
 where

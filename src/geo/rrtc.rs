@@ -2,7 +2,9 @@
 
 use alloc::vec::Vec;
 
-use crate::{space::Interpolate, time::Timeout, valid::GeoValidate, NearestNeighborsMap, Sample};
+use crate::{
+    nn::NearestNeighborsMap, sample::Sample, space::Interpolate, time::Timeout, valid::GeoValidate,
+};
 
 mod private {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -220,8 +222,12 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
 mod tests {
     use super::*;
     use crate::{
-        metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle, space::Vector, time::Solved,
-        valid::AlwaysValid, Metric,
+        metric::{Metric, SquaredEuclidean},
+        nn::KdTreeMap,
+        sample::Rectangle,
+        space::Vector,
+        time::Solved,
+        valid::AlwaysValid,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaCha20Rng;

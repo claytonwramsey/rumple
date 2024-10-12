@@ -5,9 +5,17 @@ use core::{array, iter::Sum};
 use crate::{
     nn::DistanceAabb,
     space::{Angle, Vector},
-    Metric,
 };
-use num_traits::{float::FloatCore, FloatConst};
+use num_traits::{float::FloatCore, FloatConst, Zero};
+
+/// A metric between configurations.
+pub trait Metric<C> {
+    /// The distance between configurations.
+    type Distance: PartialOrd + Zero;
+
+    /// Compute the distance between `c1` and `c2`.
+    fn distance(&self, c1: &C, c2: &C) -> Self::Distance;
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// The squared-Euclidean distance metric, i.e. the sum of the squares along each axis.

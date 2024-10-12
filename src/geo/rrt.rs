@@ -1,6 +1,9 @@
 use crate::{
-    space::Interpolate, time::Timeout, valid::GeoValidate, valid::Validate, NearestNeighborsMap,
-    Sample,
+    nn::NearestNeighborsMap,
+    sample::Sample,
+    space::Interpolate,
+    time::Timeout,
+    valid::{GeoValidate, Validate},
 };
 use alloc::vec::Vec;
 

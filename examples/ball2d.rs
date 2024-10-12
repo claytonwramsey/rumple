@@ -1,8 +1,14 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    env::World2d, geo::Rrt, metric::SquaredEuclidean, nn::KdTreeMap, sample::Rectangle,
-    space::Vector, time::Solved, valid::SampleInterpolate, Metric,
+    env::World2d,
+    geo::Rrt,
+    metric::{Metric, SquaredEuclidean},
+    nn::KdTreeMap,
+    sample::Rectangle,
+    space::Vector,
+    time::Solved,
+    valid::SampleInterpolate,
 };
 
 #[cfg_attr(test, test)]

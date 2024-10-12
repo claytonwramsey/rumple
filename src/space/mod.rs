@@ -12,7 +12,7 @@ pub use pose2d::Pose2d;
 pub use pose3d::Pose3d;
 pub use vector::Vector;
 
-use crate::{nn::DistanceAabb, Metric};
+use crate::{metric::Metric, nn::DistanceAabb};
 use num_traits::{float::FloatCore, FloatConst};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

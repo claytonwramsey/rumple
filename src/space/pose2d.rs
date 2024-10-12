@@ -2,7 +2,7 @@ use core::iter::Sum;
 
 use num_traits::{float::FloatCore, FloatConst};
 
-use crate::{nn::KdKey, space::Interpolate, Sample};
+use crate::{nn::KdKey, sample::Sample, space::Interpolate};
 
 use super::{Angle, PoseRadius, Vector};
 

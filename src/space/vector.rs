@@ -1,4 +1,4 @@
-use crate::{metric::SquaredEuclidean, nn::KdKey, Sample};
+use crate::{metric::SquaredEuclidean, nn::KdKey, sample::Sample};
 use core::{
     array,
     ops::{Deref, DerefMut, Sub},

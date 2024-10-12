@@ -4,7 +4,9 @@ use core::{fmt::Debug, hash::Hash, iter, mem::swap, ops::Add};
 use alloc::vec::Vec;
 use num_traits::Zero;
 
-use crate::{time::Timeout, valid::GeoValidate, Metric, RangeNearestNeighborsMap, Sample};
+use crate::{
+    metric::Metric, nn::RangeNearestNeighborsMap, sample::Sample, time::Timeout, valid::GeoValidate,
+};
 
 /// Probabilistic roadmaps; a class of anytime geometric motion planner.
 ///
@@ -342,13 +344,12 @@ impl<D: PartialOrd + PartialEq> Ord for Open<D> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        metric::SquaredEuclidean,
+        metric::{Metric, SquaredEuclidean},
         nn::KdTreeMap,
         sample::Rectangle,
         space::Vector,
         time::{LimitNodes, Solved},
         valid::AlwaysValid,
-        Metric,
     };
     use alloc::vec::Vec;
     use rand::SeedableRng;

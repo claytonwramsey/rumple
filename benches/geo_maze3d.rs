@@ -8,11 +8,10 @@ use rumple::{
     geo::{rrt_connect, Prm},
     metric::SquaredEuclidean,
     nn::KdTreeMap,
-    sample::Rectangle,
+    sample::{Rectangle, Sample},
     space::Vector,
     time::Solved,
     valid::{GeoValidate, SampleInterpolate},
-    Sample,
 };
 #[cfg(feature = "simd")]
 use rumple::{valid::Validate, Metric};
