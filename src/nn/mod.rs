@@ -6,6 +6,11 @@ use num_traits::Zero;
 
 use crate::metric::Metric;
 
+#[cfg(feature = "kiddo")]
+mod kiddo;
+#[cfg(feature = "kiddo")]
+pub use kiddo::{KiddoMap, KiddoNearest};
+
 /// A key-value map which is capable of nearest-neighbor search.
 pub trait NearestNeighborsMap<K, V> {
     /// Insert a key into the map.
@@ -23,10 +28,11 @@ pub trait RangeNearestNeighborsMap<K, V>: NearestNeighborsMap<K, V> {
     type RangeNearest<'q>: Iterator<Item = &'q V>
     where
         V: 'q,
+        K: 'q,
         Self: 'q;
 
     /// Get an iterator over all items in `self` within range `r` of
-    fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q>;
+    fn nearest_within_r<'q>(&'q self, key: &'q K, r: Self::Distance) -> Self::RangeNearest<'q>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -159,7 +165,7 @@ where
     type Distance = <M as Metric<K>>::Distance;
     type RangeNearest<'q> = RangeNearest<'q, K, V, M> where K: 'q, V: 'q, M: 'q;
 
-    fn nearest_within_r<'q>(&'q self, key: &K, r: Self::Distance) -> Self::RangeNearest<'q> {
+    fn nearest_within_r<'q>(&'q self, key: &'q K, r: Self::Distance) -> Self::RangeNearest<'q> {
         let mut result = Vec::new();
         if let Some(root) = self.root.as_ref() {
             self.nearest_r_help(

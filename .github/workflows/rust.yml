@@ -1,86 +1,88 @@
 name: Rust
 
 on:
-    push:
-        branches: ["master"]
-    pull_request:
+  push:
+    branches: ["master"]
+  pull_request:
 
 env:
-    CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: always
 
 jobs:
-    test_nightly:
-        name: Test
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-                os:
-                    - ubuntu-latest
-                    - windows-latest
-                    - macOS-latest
-                toolchain:
-                    - nightly
-                cargo_flags:
-                    - "--no-default-features"
-                    - "-F simd"
-                    - "-F std"
-                    - "--all-features"
-        steps:
-            - name: Checkout source code
-              uses: actions/checkout@v2
+  test_nightly:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+        toolchain:
+          - nightly
+        cargo_flags:
+          - "--no-default-features"
+          - "-F simd"
+          - "-F std"
+          - "-F kiddo"
+          - "--all-features"
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-            - name: Install Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.toolchain }}
-                  override: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-            - name: Build
-              uses: actions-rs/cargo@v1
-              with:
-                  command: build
-                  args: --all ${{ matrix.cargo_flags }}
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all ${{ matrix.cargo_flags }}
 
-            - name: Test
-              uses: actions-rs/cargo@v1
-              with:
-                  command: test
-                  args: --all ${{ matrix.cargo_flags }}
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all ${{ matrix.cargo_flags }}
 
-    test_std:
-        name: Test
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-                os:
-                    - ubuntu-latest
-                    - windows-latest
-                    - macOS-latest
-                toolchain:
-                    - stable
-                cargo_flags:
-                    - "--no-default-features"
-                    - "-F std"
-        steps:
-            - name: Checkout source code
-              uses: actions/checkout@v2
+  test_std:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+        toolchain:
+          - stable
+        cargo_flags:
+          - "--no-default-features"
+          - "-F std"
+          - "-F kiddo"
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-            - name: Install Rust
-              uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: ${{ matrix.toolchain }}
-                  override: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          override: true
 
-            - name: Build
-              uses: actions-rs/cargo@v1
-              with:
-                  command: build
-                  args: --all ${{ matrix.cargo_flags }}
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all ${{ matrix.cargo_flags }}
 
-            - name: Test
-              uses: actions-rs/cargo@v1
-              with:
-                  command: test
-                  args: --all ${{ matrix.cargo_flags }}
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all ${{ matrix.cargo_flags }}

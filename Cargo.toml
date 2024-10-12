@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+kiddo = { version = "4.2.1", optional = true, default-features = false }
 num-traits = { version = "0.2.19", default-features = false, features = [
     "libm",
 ] }
@@ -14,6 +15,7 @@ rand = { version = "0.8.5", default-features = false }
 default = ["std", "num-traits/std"]
 std = ["num-traits/std"]
 simd = []
+kiddo = ["dep:kiddo"]
 
 [dev-dependencies]
 brunch = { version = "0.6.1", default-features = false }
