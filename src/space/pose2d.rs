@@ -6,13 +6,64 @@ use crate::{nn::KdKey, sample::Sample, space::Interpolate};
 
 use super::{Angle, PoseRadius, Vector};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug)]
 /// A pose in 2 dimensions.
 pub struct Pose2d<T = f64> {
     /// The translation vector.
     pub position: Vector<2, T>,
     /// The orientation.
     pub angle: Angle<T>,
+}
+
+impl<T> PartialEq for Pose2d<T>
+where
+    Angle<T>: PartialEq,
+    Vector<2, T>: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.position.eq(&other.position) && self.angle.eq(&other.angle)
+    }
+}
+
+impl<T> Eq for Pose2d<T>
+where
+    Angle<T>: Eq,
+    Vector<2, T>: Eq,
+{
+}
+
+impl<T> PartialOrd for Pose2d<T>
+where
+    Angle<T>: PartialOrd,
+    Vector<2, T>: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        self.position
+            .partial_cmp(&other.position)
+            .into_iter()
+            .find_map(|ord| {
+                if ord.is_eq() {
+                    self.angle.partial_cmp(&other.angle)
+                } else {
+                    Some(ord)
+                }
+            })
+    }
+}
+
+impl<T> Ord for Pose2d<T>
+where
+    Angle<T>: Ord,
+    Vector<2, T>: Ord,
+{
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        let c = self.position.cmp(&other.position);
+        if c.is_eq() {
+            self.angle.cmp(&other.angle)
+        } else {
+            c
+        }
+    }
 }
 
 impl<T> Interpolate for Pose2d<T>

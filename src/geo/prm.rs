@@ -148,7 +148,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         for n in self
             .nn
             .nearest_within_r(&c, radius)
-            .map(|&Node(n)| n)
+            .map(|(_, &Node(n))| n)
             .filter(|&n| self.valid.is_valid_transition(&c, &self.configurations[n]))
         {
             self.components.unify(new_component, n);

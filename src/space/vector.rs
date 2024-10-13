@@ -7,7 +7,7 @@ use num_traits::float::FloatCore;
 
 use super::Interpolate;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 /// An `N`-dimensional vector of `T`.
 pub struct Vector<const N: usize, T = f64>(pub [T; N]);

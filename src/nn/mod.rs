@@ -25,7 +25,7 @@ pub trait RangeNearestNeighborsMap<K, V>: NearestNeighborsMap<K, V> {
     type Distance;
 
     /// An iterator over configurations within a fixed radius of a query.
-    type RangeNearest<'q>: Iterator<Item = &'q V>
+    type RangeNearest<'q>: Iterator<Item = (&'q K, &'q V)>
     where
         V: 'q,
         K: 'q,
@@ -148,10 +148,10 @@ where
 
 // TODO make this a resuming iterator
 /// An iterator over all points with a given radius of a query point in a [`KdTreeMap`].
-pub struct RangeNearest<'a, K, V, M>(Vec<&'a V>, PhantomData<&'a KdTreeMap<K, V, M>>);
+pub struct RangeNearest<'a, K, V, M>(Vec<(&'a K, &'a V)>, PhantomData<&'a KdTreeMap<K, V, M>>);
 
 impl<'a, K, V, M> Iterator for RangeNearest<'a, K, V, M> {
-    type Item = &'a V;
+    type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
@@ -253,7 +253,7 @@ where
     fn nearest_r_help<'q>(
         &'q self,
         point: &K,
-        buf: &mut Vec<&'q V>,
+        buf: &mut Vec<(&'q K, &'q V)>,
         radius: &<M as Metric<K>>::Distance,
         node: &'q Node<K, V>,
         mut reg_lo: K,
@@ -261,7 +261,7 @@ where
         k: usize,
     ) {
         if &self.metric.distance(point, &node.key) <= radius {
-            buf.push(&node.value);
+            buf.push((&node.key, &node.value));
         }
 
         let is_left = point.compare(&node.key, k).is_lt();
@@ -449,7 +449,19 @@ mod tests {
             // println!("{kdt:#?}");
             let bf_nearest = bf.nearest(&q).unwrap().0;
             let kdt_nearest = kdt.nearest(&q).unwrap().0;
+
             assert_eq!(bf_nearest, kdt_nearest);
+            let mut bf_rn: Vec<&Pose2d<f32>> = bf
+                .poses
+                .iter()
+                .filter(|p| m.distance(p, &q) <= 2.0)
+                .collect();
+            let mut kdt_rn: Vec<&Pose2d<f32>> =
+                kdt.nearest_within_r(&q, 2.0).map(|(k, _)| k).collect();
+            bf_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+            kdt_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+            assert_eq!(bf_rn, kdt_rn);
         }
     }
 }

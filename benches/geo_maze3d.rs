@@ -216,6 +216,7 @@ fn main() {
     benches.finish();
 }
 
+#[inline(never)]
 fn prm_bench<V: GeoValidate<Vector<3, F>>, S, R>(
     start: Vector<3, F>,
     goal: Vector<3, F>,
@@ -238,6 +239,7 @@ where
 }
 
 #[cfg(feature = "kiddo")]
+#[inline(never)]
 fn prm_bench_kiddo<V: GeoValidate<Vector<3, F>>, S, R>(
     start: Vector<3, F>,
     goal: Vector<3, F>,

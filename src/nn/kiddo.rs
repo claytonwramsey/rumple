@@ -59,6 +59,7 @@ where
 #[expect(clippy::module_name_repetitions)]
 pub struct KiddoNearest<'a, T, const N: usize, V, M> {
     iter: WithinUnsortedIter<'a, T, usize>,
+    keys: &'a [Vector<N, T>],
     values: &'a [V],
     _phantom: PhantomData<M>,
 }
@@ -79,6 +80,7 @@ where
             iter: self
                 .tree
                 .within_unsorted_iter::<kiddo::SquaredEuclidean>(key, r),
+            keys: &self.keys,
             values: &self.values,
             _phantom: PhantomData,
         }
@@ -86,9 +88,11 @@ where
 }
 
 impl<'a, T, const N: usize, V, M> Iterator for KiddoNearest<'a, T, N, V, M> {
-    type Item = &'a V;
+    type Item = (&'a Vector<N, T>, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|nbr| &self.values[nbr.item])
+        self.iter
+            .next()
+            .map(|nbr| (&self.keys[nbr.item], &self.values[nbr.item]))
     }
 }
 
