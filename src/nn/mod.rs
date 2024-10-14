@@ -457,7 +457,7 @@ mod tests {
                 .filter(|p| m.distance(p, &q) <= 2.0)
                 .collect();
             let mut kdt_rn: Vec<&Pose2d<f32>> =
-                kdt.nearest_within_r(&q, 2.0).map(|(k, _)| k).collect();
+                kdt.nearest_within_r(&q, 2.0).map(|(k, ())| k).collect();
             bf_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
             kdt_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 

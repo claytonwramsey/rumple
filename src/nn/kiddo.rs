@@ -2,7 +2,7 @@ use core::{marker::PhantomData, ops::AddAssign};
 
 use kiddo::{
     float::kdtree::{Axis, KdTree},
-    within_unsorted_iter::WithinUnsortedIter,
+    NearestNeighbour,
 };
 use num_traits::float::FloatCore;
 
@@ -58,7 +58,7 @@ where
 
 #[expect(clippy::module_name_repetitions)]
 pub struct KiddoNearest<'a, T, const N: usize, V, M> {
-    iter: WithinUnsortedIter<'a, T, usize>,
+    iter: Vec<NearestNeighbour<T, usize>>,
     keys: &'a [Vector<N, T>],
     values: &'a [V],
     _phantom: PhantomData<M>,
@@ -77,9 +77,7 @@ where
         r: Self::Distance,
     ) -> Self::RangeNearest<'q> {
         KiddoNearest {
-            iter: self
-                .tree
-                .within_unsorted_iter::<kiddo::SquaredEuclidean>(key, r),
+            iter: self.tree.within_unsorted::<kiddo::SquaredEuclidean>(key, r),
             keys: &self.keys,
             values: &self.values,
             _phantom: PhantomData,
@@ -91,7 +89,7 @@ impl<'a, T, const N: usize, V, M> Iterator for KiddoNearest<'a, T, N, V, M> {
     type Item = (&'a Vector<N, T>, &'a V);
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
-            .next()
+            .pop()
             .map(|nbr| (&self.keys[nbr.item], &self.values[nbr.item]))
     }
 }
