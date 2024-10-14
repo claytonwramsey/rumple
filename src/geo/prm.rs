@@ -148,8 +148,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         for n in self
             .nn
             .nearest_within_r(&c, radius)
-            .map(|(_, &Node(n))| n)
-            .filter(|&n| self.valid.is_valid_transition(&c, &self.configurations[n]))
+            .filter_map(|(q, &Node(n))| self.valid.is_valid_transition(&c, q).then_some(n))
         {
             self.components.unify(new_component, n);
             // assume bidirectionality
