@@ -15,7 +15,8 @@ use crate::{
 pub struct KdTreeMap<K, V, M> {
     /// `nodes[0]` is the root, but no guarantees on the others.
     /// if this is empty, the tree is empty.
-    nodes: Vec<Node<K, V>>,
+    nodes: Vec<Node<K>>,
+    values: Vec<V>,
     metric: M,
 }
 
@@ -43,9 +44,8 @@ pub trait DistanceAabb<C>: Metric<C> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Node<K, V> {
+struct Node<K> {
     key: K,
-    value: V,
     children: [Option<NonZeroUsize>; 2],
 }
 
@@ -54,6 +54,7 @@ impl<K, V, M> KdTreeMap<K, V, M> {
     pub const fn new(metric: M) -> Self {
         Self {
             nodes: Vec::new(),
+            values: Vec::new(),
             metric,
         }
     }
@@ -70,9 +71,9 @@ where
         if new_node_id == 0 {
             self.nodes.push(Node {
                 key,
-                value,
-                children: [None, None],
+                children: [None; 2],
             });
+            self.values.push(value);
             return;
         }
 
@@ -91,28 +92,21 @@ where
         parent.children[side] = Some(NonZeroUsize::new(new_node_id).unwrap());
         self.nodes.push(Node {
             key,
-            value,
             children: [None, None],
         });
+        self.values.push(value);
     }
 
     fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)> {
         let root = self.nodes.first()?;
         let mut radius = self.metric.distance(&root.key, key);
         if radius.is_zero() {
-            return Some((&root.key, &root.value));
+            return Some((&root.key, &self.values[0]));
         }
         let best_node = self
-            .nearest_help(
-                root,
-                key,
-                K::lower_bound(),
-                K::upper_bound(),
-                &mut radius,
-                0,
-            )
-            .unwrap_or(root);
-        Some((&best_node.key, &best_node.value))
+            .nearest_help(0, key, K::lower_bound(), K::upper_bound(), &mut radius, 0)
+            .map_or(0, NonZeroUsize::get);
+        Some((&self.nodes[best_node].key, &self.values[best_node]))
     }
 }
 
@@ -137,12 +131,12 @@ where
 
     fn nearest_within_r<'q>(&'q self, key: &'q K, r: Self::Distance) -> Self::RangeNearest<'q> {
         let mut result = Vec::new();
-        if let Some(root) = self.nodes.first() {
+        if !self.nodes.is_empty() {
             self.nearest_r_help(
                 key,
                 &mut result,
                 &r,
-                root,
+                0,
                 K::lower_bound(),
                 K::upper_bound(),
                 0,
@@ -157,15 +151,16 @@ where
     M: DistanceAabb<K>,
     K: KdKey,
 {
-    fn nearest_help<'q>(
-        &'q self,
-        node: &'q Node<K, V>,
+    fn nearest_help(
+        &self,
+        node_id: usize,
         key: &K,
         mut reg_lo: K,
         mut reg_hi: K,
         radius: &mut <M as Metric<K>>::Distance,
         k: usize,
-    ) -> Option<&'q Node<K, V>> {
+    ) -> Option<NonZeroUsize> {
+        let node = &self.nodes[node_id];
         let mut best_result = None;
         let is_right = node.key.compare(key, k).is_le();
         // search right side first
@@ -176,7 +171,7 @@ where
             let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
-                best_result = Some(child);
+                best_result = Some(child_id);
                 if radius.is_zero() {
                     // exact match to query
                     return best_result;
@@ -185,7 +180,7 @@ where
 
             best_result = self
                 .nearest_help(
-                    child,
+                    child_id.get(),
                     key,
                     reg_lo.clone(),
                     reg_hi.clone(),
@@ -199,7 +194,7 @@ where
             let cdist = self.metric.distance(&child.key, key);
             if cdist <= *radius {
                 *radius = cdist;
-                best_result = Some(child);
+                best_result = Some(child_id);
                 if radius.is_zero() {
                     // exact match to query
                     return best_result;
@@ -213,7 +208,14 @@ where
             }
             if self.metric.distance_to_aabb(key, &reg_lo, &reg_hi) < *radius {
                 best_result = self
-                    .nearest_help(child, key, reg_lo, reg_hi, radius, (k + 1) % K::dimension())
+                    .nearest_help(
+                        child_id.get(),
+                        key,
+                        reg_lo,
+                        reg_hi,
+                        radius,
+                        (k + 1) % K::dimension(),
+                    )
                     .or(best_result);
             }
         }
@@ -227,13 +229,14 @@ where
         point: &K,
         buf: &mut Vec<(&'q K, &'q V)>,
         radius: &<M as Metric<K>>::Distance,
-        node: &'q Node<K, V>,
+        node_id: usize,
         mut reg_lo: K,
         mut reg_hi: K,
         k: usize,
     ) {
+        let node = &self.nodes[node_id];
         if &self.metric.distance(point, &node.key) <= radius {
-            buf.push((&node.key, &node.value));
+            buf.push((&node.key, &self.values[node_id]));
         }
 
         let is_left = point.compare(&node.key, k).is_lt();
@@ -249,7 +252,7 @@ where
                 point,
                 buf,
                 radius,
-                &self.nodes[c.get()],
+                c.get(),
                 reg_lo.clone(),
                 reg_hi.clone(),
                 new_k,
@@ -263,15 +266,7 @@ where
                 reg_hi.assign(&node.key, k);
             }
             if &self.metric.distance_to_aabb(point, &reg_lo, &reg_hi) <= radius {
-                self.nearest_r_help(
-                    point,
-                    buf,
-                    radius,
-                    &self.nodes[c.get()],
-                    reg_lo,
-                    reg_hi,
-                    new_k,
-                );
+                self.nearest_r_help(point, buf, radius, c.get(), reg_lo, reg_hi, new_k);
             }
         }
     }
