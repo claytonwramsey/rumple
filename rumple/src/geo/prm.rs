@@ -1,5 +1,5 @@
 use alloc::collections::BinaryHeap;
-use core::{fmt::Debug, hash::Hash, iter, mem::swap, ops::Add};
+use core::{fmt::Debug, iter, mem::swap, ops::Add};
 
 use alloc::vec::Vec;
 use num_traits::Zero;
@@ -42,14 +42,12 @@ pub struct Prm<'a, C, NN, V> {
 }
 
 mod private {
-    pub struct Node(pub usize);
+    #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
+    pub struct Node(pub(super) usize);
 }
 use private::Node;
 
-#[expect(clippy::module_name_repetitions)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-/// The ID for a node in a [`Prm`].
-pub struct PrmNodeId(usize);
+use super::Graph;
 
 #[derive(Clone, Debug)]
 /// A disjoint set forest.
@@ -107,8 +105,8 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         timeout: &mut TC,
         sample: &S,
         rng: &mut RNG,
-        start: PrmNodeId,
-        goal: PrmNodeId,
+        start: Node,
+        goal: Node,
     ) where
         V: GeoValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
@@ -132,7 +130,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// Insert a configuration into the graph, connecting it to all other nodes in the graph within
     /// a distance of `radius`. Returns the ID of the node it created, or `None` if the given
     /// configuration was invalid.
-    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<PrmNodeId>
+    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<Node>
     where
         V: GeoValidate<C>,
         NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
@@ -163,13 +161,13 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
             self.configurations.len(),
             "configuration and edge buffers must have equal length"
         );
-        Some(PrmNodeId(i))
+        Some(Node(i))
     }
 
     /// Get the configuration in the graph corresponding to the given node ID.
     ///
     /// Returns `None` if no such node with the given ID exists.
-    pub fn configuration(&self, id: PrmNodeId) -> Option<&C> {
+    pub fn configuration(&self, id: Node) -> Option<&C> {
         self.configurations.get(id.0)
     }
 
@@ -178,7 +176,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// # Panics
     ///
     /// This function may panic if `start` or `end` point to nodes which do not exist in `self`.
-    pub fn path<M, D>(&self, start: PrmNodeId, end: PrmNodeId, cost: &M) -> Option<Vec<PrmNodeId>>
+    pub fn path<M, D>(&self, start: Node, end: Node, cost: &M) -> Option<Vec<Node>>
     where
         M: Metric<C, Distance = D>,
         D: Add + Zero + PartialOrd + Clone,
@@ -217,11 +215,11 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         while let Some(Open { node, .. }) = open.pop() {
             if node == start.0 {
                 // done
-                let mut traj = vec![PrmNodeId(start.0)];
+                let mut traj = vec![Node(start.0)];
                 let mut n = start.0;
                 while n != end.0 {
                     n = parent[n];
-                    traj.push(PrmNodeId(n));
+                    traj.push(Node(n));
                 }
                 return Some(traj);
             }
@@ -249,6 +247,19 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         }
 
         unreachable!("if start and goal are in same connected component, A* must find a path");
+    }
+}
+
+impl<'a, C, NN, V> Graph for Prm<'a, C, NN, V> {
+    type Node = Node;
+    type Configuration = C;
+
+    fn configuration(&self, node: Self::Node) -> &Self::Configuration {
+        self.configuration(node).unwrap()
+    }
+
+    fn neighbors(&self, node: Self::Node) -> impl IntoIterator<Item = Self::Node> {
+        self.edges[node.0].iter().map(|&x| Node(x))
     }
 }
 
