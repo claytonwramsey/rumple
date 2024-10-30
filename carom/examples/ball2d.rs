@@ -1,7 +1,6 @@
 use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    env::World2d,
     geo::Rrt,
     metric::{Metric, SquaredEuclidean},
     nn::KdTreeMap,
@@ -10,6 +9,8 @@ use rumple::{
     time::Solved,
     valid::SampleInterpolate,
 };
+
+use carom::env::World2d;
 
 #[cfg_attr(test, test)]
 fn main() {

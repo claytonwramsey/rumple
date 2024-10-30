@@ -3,7 +3,6 @@
 //! zero-cost API.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(feature = "simd", feature(portable_simd))]
 #![warn(clippy::pedantic, clippy::nursery)]
 #![warn(clippy::allow_attributes, reason = "prefer expect over allow")]
 // #![warn(missing_docs)]
@@ -11,7 +10,6 @@
 #[macro_use]
 extern crate alloc;
 
-pub mod env;
 pub mod geo;
 pub mod kino;
 pub mod metric;

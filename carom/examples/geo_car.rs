@@ -1,8 +1,8 @@
+use carom::env::World2d;
 use num_traits::FloatConst;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    env::World2d,
     geo::RrtConnect,
     metric::SquaredEuclidean,
     nn::KdTreeMap,
@@ -68,7 +68,7 @@ fn main() {
         &valid,
     );
 
-    let traj = rrtc
+    let _traj = rrtc
         .grow(
             &Rectangle {
                 min: Vector::new([-2.0; 2]),
@@ -83,6 +83,6 @@ fn main() {
     #[cfg(feature = "std")]
     {
         println!("Created {} nodes", rrtc.num_nodes());
-        println!("{traj:?}");
+        println!("{_traj:?}");
     }
 }

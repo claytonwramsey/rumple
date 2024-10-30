@@ -117,7 +117,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use rumple::{env::World2d, space::Angle};
+    /// use carom::env::World2d;
     /// let mut world = World2d::new();
     ///
     /// // create ball of radius 0.5 at position (1.0, 1.0)

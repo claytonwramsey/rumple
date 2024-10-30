@@ -1,10 +1,10 @@
 use core::hint::black_box;
 
+use carom::env::World2d;
 use num_traits::FloatConst;
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    env::World2d,
     geo::rrt_connect,
     metric::SquaredEuclidean,
     nn::KdTreeMap,

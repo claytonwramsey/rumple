@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 use num_traits::float::FloatCore;
 
-#[cfg(feature = "simd")]
 use core::{
     ops::{Add, Mul, Sub},
     simd::{prelude::*, LaneCount, Simd, SimdElement, SupportedLaneCount},
@@ -85,7 +84,6 @@ impl<T> World3d<T> {
         )
     }
 
-    #[cfg(feature = "simd")]
     pub fn collides_balls<const L: usize>(
         &self,
         xs: Simd<T, L>,
@@ -150,10 +148,9 @@ impl<T> Default for World3d<T> {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "simd")]
     #[test]
     fn try_simd() {
-        use std::simd::Simd;
+        use core::simd::Simd;
 
         use crate::env::World3d;
 
