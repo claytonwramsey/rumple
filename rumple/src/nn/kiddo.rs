@@ -10,7 +10,6 @@ use crate::{nn::NearestNeighborsMap, space::Vector};
 
 use super::RangeNearestNeighborsMap;
 
-#[expect(clippy::module_name_repetitions)]
 #[derive(Clone, Debug)]
 /// A _k_-d tree map using [`kiddo::KdTree`] as its backing implementation.
 ///
@@ -56,7 +55,6 @@ where
     }
 }
 
-#[expect(clippy::module_name_repetitions)]
 pub struct KiddoNearest<'a, T, const N: usize, V, M> {
     iter: Vec<NearestNeighbour<T, usize>>,
     keys: &'a [Vector<N, T>],
@@ -70,7 +68,10 @@ where
     T: FloatCore + Default + AddAssign + Send + Sync + Axis,
 {
     type Distance = T;
-    type RangeNearest<'q> = KiddoNearest<'q, T, N, V, crate::metric::SquaredEuclidean> where Self: 'q;
+    type RangeNearest<'q>
+        = KiddoNearest<'q, T, N, V, crate::metric::SquaredEuclidean>
+    where
+        Self: 'q;
     fn nearest_within_r<'q>(
         &'q self,
         key: &'q Vector<N, T>,

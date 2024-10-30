@@ -35,14 +35,14 @@ struct RakeValidate<'a> {
 }
 
 #[cfg(feature = "simd")]
-impl<'a> Validate<Vector<3, F>> for RakeValidate<'a> {
+impl Validate<Vector<3, F>> for RakeValidate<'_> {
     fn is_valid_configuration(&self, &Vector([x, y, z]): &Vector<3, F>) -> bool {
         !self.env.collides_ball(x, y, z, self.radius)
     }
 }
 
 #[cfg(feature = "simd")]
-impl<'a> GeoValidate<Vector<3, F>> for RakeValidate<'a> {
+impl GeoValidate<Vector<3, F>> for RakeValidate<'_> {
     fn is_valid_transition(&self, v0: &Vector<3, F>, v1: &Vector<3, F>) -> bool {
         let distsq = SquaredEuclidean.distance(v0, v1);
         let rakesq = self.rake_width;
