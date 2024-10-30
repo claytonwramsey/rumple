@@ -102,49 +102,51 @@ fn main() {
         max: Vector([5.0, 5.0, 0.5]),
     };
 
+    let rrt_radius = 1.0;
+
     let mut benches = Benches::default();
     benches.push(Bench::new("geo_maze3d_prm").run(|| {
-        black_box(prm_bench(
+        prm_bench(
             black_box(start),
             black_box(goal),
-            black_box(&valid),
-            black_box(&sampler),
+            &valid,
+            &sampler,
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
     benches.push(Bench::new("geo_maze3d_rrtc").run(|| {
-        black_box(rrt_connect(
+        rrt_connect(
             black_box(start),
             black_box(goal),
             KdTreeMap::new(SquaredEuclidean),
-            black_box(&valid),
-            black_box(&sampler),
-            black_box(1.0),
+            &valid,
+            &sampler,
+            rrt_radius,
             &mut Solved::new(),
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
 
     benches.push(Bench::new("geo_maze3d_prm_kiddo").run(|| {
-        black_box(prm_bench_kiddo(
+        prm_bench_kiddo(
             black_box(start),
             black_box(goal),
-            black_box(&valid),
-            black_box(&sampler),
+            &valid,
+            &sampler,
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
     benches.push(Bench::new("geo_maze3d_rrtc_kiddo").run(|| {
-        black_box(rrt_connect(
+        rrt_connect(
             black_box(start),
             black_box(goal),
             rumple::nn::KiddoMap::<_, 3, _, SquaredEuclidean>::new(),
-            black_box(&valid),
-            black_box(&sampler),
-            black_box(1.0),
+            &valid,
+            &sampler,
+            rrt_radius,
             &mut Solved::new(),
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
 
     let rake_valid = RakeValidate {
@@ -153,47 +155,47 @@ fn main() {
         env: &env,
     };
     benches.push(Bench::new("geo_maze3d_prm_simd").run(|| {
-        black_box(prm_bench(
+        prm_bench(
             black_box(start),
             black_box(goal),
-            black_box(&rake_valid),
-            black_box(&sampler),
+            &rake_valid,
+            &sampler,
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
     benches.push(Bench::new("geo_maze3d_rrtc_simd").run(|| {
-        black_box(rrt_connect(
+        rrt_connect(
             black_box(start),
             black_box(goal),
             KdTreeMap::new(SquaredEuclidean),
-            black_box(&rake_valid),
-            black_box(&sampler),
-            black_box(1.0),
+            &rake_valid,
+            &sampler,
+            rrt_radius,
             &mut Solved::new(),
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
 
     benches.push(Bench::new("geo_maze3d_prm_simd_kiddo").run(|| {
-        black_box(prm_bench_kiddo(
+        prm_bench_kiddo(
             black_box(start),
             black_box(goal),
-            black_box(&rake_valid),
-            black_box(&sampler),
+            &rake_valid,
+            &sampler,
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
     benches.push(Bench::new("geo_maze3d_rrtc_simd_kiddo").run(|| {
-        black_box(rrt_connect(
+        rrt_connect(
             black_box(start),
             black_box(goal),
             rumple::nn::KiddoMap::<_, 3, _, SquaredEuclidean>::new(),
-            black_box(&rake_valid),
-            black_box(&sampler),
-            black_box(1.0),
+            &rake_valid,
+            &sampler,
+            rrt_radius,
             &mut Solved::new(),
             &mut ChaCha20Rng::seed_from_u64(2707),
-        ))
+        )
     }));
     benches.finish();
 }
