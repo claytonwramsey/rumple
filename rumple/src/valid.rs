@@ -80,19 +80,13 @@ where
 {
     fn is_valid_transition(&self, start: &C, end: &C) -> bool {
         let mut interp = start.interpolate(end, self.radius.clone());
-        loop {
-            match interp {
-                Ok(c) => {
-                    if !self.is_valid_configuration(&c) {
-                        return false;
-                    }
-                    interp = c.interpolate(end, self.radius.clone());
-                }
-                Err(_) => {
-                    return true;
-                }
+        while let Ok(c) = interp {
+            if !self.is_valid_configuration(&c) {
+                return false;
             }
+            interp = c.interpolate(end, self.radius.clone());
         }
+        true
     }
 }
 
