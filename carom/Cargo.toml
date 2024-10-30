@@ -13,11 +13,6 @@ rumple = { path = "../rumple", features = ["kiddo"] }
 [features]
 std = []
 
-
-[profile.bench]
-debug = true
-codegen-units = 32
-
 [[bench]]
 name = "geo_car"
 harness = false
