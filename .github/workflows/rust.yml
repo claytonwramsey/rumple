@@ -22,7 +22,6 @@ jobs:
           - nightly
         cargo_flags:
           - "--no-default-features"
-          - "-F simd"
           - "-F std"
           - "-F kiddo"
           - "--all-features"
