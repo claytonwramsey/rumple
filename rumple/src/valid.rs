@@ -79,9 +79,6 @@ where
     R: Clone,
 {
     fn is_valid_transition(&self, start: &C, end: &C) -> bool {
-        if !self.is_valid_configuration(start) {
-            return false;
-        }
         let mut interp = start.interpolate(end, self.radius.clone());
         loop {
             match interp {
@@ -91,8 +88,8 @@ where
                     }
                     interp = c.interpolate(end, self.radius.clone());
                 }
-                Err(c) => {
-                    return self.is_valid_configuration(&c);
+                Err(_) => {
+                    return true;
                 }
             }
         }
@@ -133,5 +130,6 @@ pub trait DynamicValidate<P, C, U, D> {
 /// Used by many geometric planners.
 pub trait GeoValidate<C>: Validate<C> {
     /// Determine whether the continuous transition between `start` and `end` is valid.
+    /// This function may assume that `start` and `end` are already valid.
     fn is_valid_transition(&self, start: &C, end: &C) -> bool;
 }

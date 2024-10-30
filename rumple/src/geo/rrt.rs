@@ -153,7 +153,9 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
                 Ok(c) => (false, c),
                 Err(c) => (true, c),
             };
-            if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
+            if !self.valid.is_valid_configuration(&end_cfg)
+                || !self.valid.is_valid_transition(start_cfg, &end_cfg)
+            {
                 continue;
             }
             timeout.update_node_count(1);

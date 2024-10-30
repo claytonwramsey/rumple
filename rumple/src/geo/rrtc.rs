@@ -144,7 +144,9 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
                 Ok(c) | Err(c) => c,
             };
 
-            if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
+            if !self.valid.is_valid_configuration(&end_cfg)
+                || !self.valid.is_valid_transition(start_cfg, &end_cfg)
+            {
                 continue;
             }
             timeout.update_node_count(1);
@@ -166,7 +168,9 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
                     Err(c) => (c, true),
                 };
 
-                if !self.valid.is_valid_transition(start_cfg, &end_cfg) {
+                if !self.valid.is_valid_configuration(&end_cfg)
+                    || !self.valid.is_valid_transition(start_cfg, &end_cfg)
+                {
                     break;
                 }
 
