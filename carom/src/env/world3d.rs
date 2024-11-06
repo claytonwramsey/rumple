@@ -1,10 +1,9 @@
 use alloc::vec::Vec;
 use num_traits::float::FloatCore;
 
-use core::{
-    ops::{Add, Mul, Sub},
-    simd::{prelude::*, LaneCount, Simd, SimdElement, SupportedLaneCount},
-};
+use core::simd::{prelude::*, LaneCount, Simd, SimdElement, SupportedLaneCount};
+
+use crate::SimdArithmetic;
 
 use super::{Aabb, Ball};
 
@@ -93,12 +92,7 @@ impl<T> World3d<T> {
     ) -> bool
     where
         T: SimdElement + FloatCore,
-        Simd<T, L>: Add<Output = Simd<T, L>>
-            + Sub<Output = Simd<T, L>>
-            + Mul<Output = Simd<T, L>>
-            + SimdPartialOrd
-            + SimdPartialEq<Mask = Mask<T::Mask, L>>
-            + SimdFloat,
+        Simd<T, L>: SimdArithmetic<T, L>,
         LaneCount<L>: SupportedLaneCount,
     {
         let rsqs = rs * rs;

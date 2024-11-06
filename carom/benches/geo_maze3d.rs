@@ -14,7 +14,7 @@ use rumple::{
 };
 
 use brunch::{Bench, Benches};
-use carom::{env::World3d, robot::Sphere, Validation};
+use carom::{env::World3d, robot::Sphere, Rake};
 
 type F = f32;
 const L: usize = 8;
@@ -110,7 +110,7 @@ fn main() {
         )
     }));
 
-    let rake_valid = Validation::<_, _, L> {
+    let rake_valid = Rake::<_, _, L> {
         robot: Sphere {
             r,
             resolution: step_size,

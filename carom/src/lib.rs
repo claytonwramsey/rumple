@@ -23,7 +23,35 @@ extern crate alloc;
 pub mod env;
 pub mod robot;
 
-pub struct Block<const N: usize, const L: usize, F>([Simd<F, L>; N])
+pub trait SimdArithmetic<F, const L: usize>:
+    Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Output = Self>
+    + Div<Output = Self>
+    + SimdPartialOrd
+    + SimdPartialEq<Mask = Mask<F::Mask, L>>
+    + SimdFloat
+where
+    LaneCount<L>: SupportedLaneCount,
+    F: SimdElement,
+{
+}
+
+impl<F, const L: usize> SimdArithmetic<F, L> for Simd<F, L>
+where
+    Simd<F, L>: Add<Output = Self>
+        + Sub<Output = Self>
+        + Mul<Output = Self>
+        + Div<Output = Self>
+        + SimdPartialOrd
+        + SimdPartialEq<Mask = Mask<F::Mask, L>>
+        + SimdFloat,
+    LaneCount<L>: SupportedLaneCount,
+    F: SimdElement,
+{
+}
+
+pub struct Block<const N: usize, const L: usize, F>(pub [Simd<F, L>; N])
 where
     F: SimdElement,
     LaneCount<L>: SupportedLaneCount;
@@ -61,12 +89,7 @@ where
     where
         LaneCount<L>: SupportedLaneCount,
         F: SimdElement + FloatCore,
-        Simd<F, L>: Add<Output = Simd<F, L>>
-            + Sub<Output = Simd<F, L>>
-            + Mul<Output = Simd<F, L>>
-            + SimdPartialOrd
-            + SimdPartialEq<Mask = Mask<F::Mask, L>>
-            + SimdFloat;
+        Simd<F, L>: SimdArithmetic<F, L>;
 }
 
 /// Determine whether the transition from `start` to `end` is valid by sampling points spaced
@@ -82,13 +105,7 @@ pub fn is_valid_transition<R: Robot<N, F>, const N: usize, const L: usize, F>(
 where
     F: SimdElement + FloatCore,
     LaneCount<L>: SupportedLaneCount,
-    Simd<F, L>: Add<Output = Simd<F, L>>
-        + Sub<Output = Simd<F, L>>
-        + Mul<Output = Simd<F, L>>
-        + Div<Output = Simd<F, L>>
-        + SimdPartialOrd
-        + SimdPartialEq<Mask = Mask<F::Mask, L>>
-        + SimdFloat,
+    Simd<F, L>: SimdArithmetic<F, L>,
 {
     let distance = SquaredEuclidean.distance(start, end);
     let l_float = <F as NumCast>::from(L).unwrap();
@@ -119,47 +136,29 @@ where
     })
 }
 
-pub struct Validation<R, W, const L: usize> {
+pub struct Rake<R, W, const L: usize> {
     pub robot: R,
     pub world: W,
 }
 
-impl<R, W, const N: usize, const L: usize, F> Validate<Vector<N, F>> for Validation<R, W, L>
+impl<R, W, const N: usize, const L: usize, F> Validate<Vector<N, F>> for Rake<R, W, L>
 where
     R: Robot<N, F, World = W>,
     F: SimdElement + FloatCore,
-    Simd<F, 1>: Add<Output = Simd<F, 1>>
-        + Sub<Output = Simd<F, 1>>
-        + Mul<Output = Simd<F, 1>>
-        + Div<Output = Simd<F, 1>>
-        + SimdPartialOrd
-        + SimdPartialEq<Mask = Mask<F::Mask, 1>>
-        + SimdFloat,
+    Simd<F, 1>: SimdArithmetic<F, 1>,
 {
     fn is_valid_configuration(&self, c: &Vector<N, F>) -> bool {
         self.robot.is_valid(&Block(c.map(Simd::splat)), &self.world)
     }
 }
 
-impl<R, W, const N: usize, const L: usize, F> GeoValidate<Vector<N, F>> for Validation<R, W, L>
+impl<R, W, const N: usize, const L: usize, F> GeoValidate<Vector<N, F>> for Rake<R, W, L>
 where
     R: Robot<N, F, World = W>,
     F: SimdElement + FloatCore,
     LaneCount<L>: SupportedLaneCount,
-    Simd<F, L>: Add<Output = Simd<F, L>>
-        + Sub<Output = Simd<F, L>>
-        + Mul<Output = Simd<F, L>>
-        + Div<Output = Simd<F, L>>
-        + SimdPartialOrd
-        + SimdPartialEq<Mask = Mask<F::Mask, L>>
-        + SimdFloat,
-    Simd<F, 1>: Add<Output = Simd<F, 1>>
-        + Sub<Output = Simd<F, 1>>
-        + Mul<Output = Simd<F, 1>>
-        + Div<Output = Simd<F, 1>>
-        + SimdPartialOrd
-        + SimdPartialEq<Mask = Mask<F::Mask, 1>>
-        + SimdFloat,
+    Simd<F, L>: SimdArithmetic<F, L>,
+    Simd<F, 1>: SimdArithmetic<F, 1>,
 {
     fn is_valid_transition(&self, start: &Vector<N, F>, end: &Vector<N, F>) -> bool {
         is_valid_transition(
