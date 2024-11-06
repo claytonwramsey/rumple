@@ -5,58 +5,19 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use rumple::{
     geo::{rrt_connect, Prm},
-    metric::{Metric, SquaredEuclidean},
+    metric::SquaredEuclidean,
     nn::{KdTreeMap, KiddoMap},
     sample::{Rectangle, Sample},
     space::Vector,
     time::Solved,
-    valid::{GeoValidate, SampleInterpolate, Validate},
+    valid::{GeoValidate, SampleInterpolate},
 };
-use std::{array, simd::Simd};
 
 use brunch::{Bench, Benches};
-use carom::env::World3d;
+use carom::{env::World3d, robot::Sphere, Validation};
 
 type F = f32;
-
 const L: usize = 8;
-
-struct RakeValidate<'a> {
-    radius: F,
-    rake_width: F,
-    env: &'a World3d<F>,
-}
-
-impl Validate<Vector<3, F>> for RakeValidate<'_> {
-    fn is_valid_configuration(&self, &Vector([x, y, z]): &Vector<3, F>) -> bool {
-        !self.env.collides_ball(x, y, z, self.radius)
-    }
-}
-
-impl GeoValidate<Vector<3, F>> for RakeValidate<'_> {
-    fn is_valid_transition(&self, v0: &Vector<3, F>, v1: &Vector<3, F>) -> bool {
-        let distsq = SquaredEuclidean.distance(v0, v1);
-        let rakesq = self.rake_width;
-        let start_offsets =
-            Simd::<F, L>::from_array(array::from_fn(|i| i as F)) / Simd::splat(L as F);
-        let rake_frac = rakesq / distsq;
-        let [x_add, y_add, z_add] = array::from_fn(|i| Simd::splat((v1[i] - v0[i]) * rake_frac));
-        let n_steps = (rake_frac * L as F).recip().ceil() as u32;
-        let [mut x, mut y, mut z] =
-            array::from_fn(|i| Simd::splat(v0[i]) + Simd::splat(v1[i] - v0[i]) * start_offsets);
-        let rs = Simd::splat(self.radius);
-        // println!("{n_steps}");
-        for _ in 0..n_steps {
-            if self.env.collides_balls(x, y, z, rs) {
-                return false;
-            }
-            x += x_add;
-            y += y_add;
-            z += z_add;
-        }
-        true
-    }
-}
 
 fn main() {
     let h: F = 1.0;
@@ -149,10 +110,12 @@ fn main() {
         )
     }));
 
-    let rake_valid = RakeValidate {
-        radius: r,
-        rake_width: step_size,
-        env: &env,
+    let rake_valid = Validation::<_, _, L> {
+        robot: Sphere {
+            r,
+            resolution: step_size,
+        },
+        world: env.clone(),
     };
     benches.push(Bench::new("geo_maze3d_prm_simd").run(|| {
         prm_bench(

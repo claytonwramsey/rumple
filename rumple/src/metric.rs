@@ -1,6 +1,6 @@
 //! Distance metrics.
 
-use core::{array, iter::Sum};
+use core::array;
 
 use crate::{
     nn::DistanceAabb,
@@ -42,7 +42,7 @@ impl SquaredEuclidean {
 
 impl<T, const N: usize> Metric<Vector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore + Sum,
+    T: FloatCore,
 {
     type Distance = T;
 
@@ -53,7 +53,7 @@ where
 
 impl<T, const N: usize> DistanceAabb<Vector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore + Sum,
+    T: FloatCore,
 {
     fn distance_to_aabb(
         &self,

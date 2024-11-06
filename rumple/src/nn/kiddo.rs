@@ -11,6 +11,7 @@ use crate::{nn::NearestNeighborsMap, space::Vector};
 use super::RangeNearestNeighborsMap;
 
 #[derive(Clone, Debug)]
+#[expect(clippy::module_name_repetitions)]
 /// A _k_-d tree map using [`kiddo::KdTree`] as its backing implementation.
 ///
 /// Unlike [`KdTreeMap`](super::KdTreeMap)
@@ -55,6 +56,7 @@ where
     }
 }
 
+#[expect(clippy::module_name_repetitions)]
 pub struct KiddoNearest<'a, T, const N: usize, V, M> {
     iter: Vec<NearestNeighbour<T, usize>>,
     keys: &'a [Vector<N, T>],
