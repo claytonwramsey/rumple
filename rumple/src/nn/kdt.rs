@@ -127,7 +127,12 @@ where
     K: KdKey,
 {
     type Distance = <M as Metric<K>>::Distance;
-    type RangeNearest<'q> = RangeNearest<'q, K, V, M> where K: 'q, V: 'q, M: 'q;
+    type RangeNearest<'q>
+        = RangeNearest<'q, K, V, M>
+    where
+        K: 'q,
+        V: 'q,
+        M: 'q;
 
     fn nearest_within_r<'q>(&'q self, key: &'q K, r: Self::Distance) -> Self::RangeNearest<'q> {
         let mut result = Vec::new();
