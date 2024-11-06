@@ -1,6 +1,6 @@
 use core::simd::{LaneCount, Simd, SimdElement, SupportedLaneCount};
 
-use num_traits::float::FloatCore;
+use num_traits::float::Float;
 
 use crate::{env::World3d, Block, Robot, SimdArithmetic};
 
@@ -9,7 +9,7 @@ pub struct Sphere<F> {
     pub resolution: F,
 }
 
-impl<F: FloatCore + SimdElement> Robot<3, F> for Sphere<F> {
+impl<F: Float + SimdElement> Robot<3, F> for Sphere<F> {
     type World = World3d<F>;
 
     fn resolution(&self) -> F {
@@ -23,7 +23,7 @@ impl<F: FloatCore + SimdElement> Robot<3, F> for Sphere<F> {
     ) -> bool
     where
         LaneCount<L>: SupportedLaneCount,
-        F: SimdElement + FloatCore,
+        F: SimdElement + Float,
         Simd<F, L>: SimdArithmetic<F, L>,
     {
         !world.collides_balls(xs, ys, zs, Simd::splat(self.r))

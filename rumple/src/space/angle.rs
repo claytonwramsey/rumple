@@ -1,4 +1,4 @@
-use num_traits::{float::FloatCore, FloatConst, Zero};
+use num_traits::{float::Float, FloatConst, Zero};
 
 use crate::{nn::KdKey, space::Interpolate};
 
@@ -20,7 +20,7 @@ impl<T> Angle<T> {
     /// This function will panic if `T` is not between -pi and pi.
     pub fn new(value: T) -> Self
     where
-        T: num_traits::FloatConst + FloatCore,
+        T: num_traits::FloatConst + Float,
     {
         assert!(
             T::zero() <= value && value < T::TAU(),
@@ -49,7 +49,7 @@ impl<T> Angle<T> {
     /// otherwise.
     pub fn signed_distance(self, other: Self) -> T
     where
-        T: FloatCore + FloatConst,
+        T: Float + FloatConst,
     {
         let diff = other.get() - self.get();
         // manual check is faster than fmod
@@ -65,13 +65,13 @@ impl<T> Angle<T> {
 
 impl<T: PartialEq> Eq for Angle<T> {}
 
-impl<T: FloatCore> PartialOrd for Angle<T> {
+impl<T: Float> PartialOrd for Angle<T> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<T: FloatCore> Ord for Angle<T> {
+impl<T: Float> Ord for Angle<T> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         unsafe { self.0.partial_cmp(&other.0).unwrap_unchecked() }
     }
@@ -107,7 +107,7 @@ impl<T> AsRef<T> for Angle<T> {
 
 impl<T> Interpolate for Angle<T>
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     type Distance = T;
     fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Result<Self, Self> {

@@ -1,4 +1,4 @@
-use num_traits::{float::FloatCore, FloatConst};
+use num_traits::{float::Float, FloatConst};
 
 use crate::{nn::KdKey, sample::Sample, space::Interpolate};
 
@@ -66,7 +66,7 @@ where
 
 impl<T> Interpolate for Pose2d<T>
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     type Distance = PoseRadius<T>;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {

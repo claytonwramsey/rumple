@@ -11,9 +11,9 @@ use core::{
     },
 };
 
-use num_traits::{float::FloatCore, NumCast};
+use num_traits::{Float, NumCast};
 use rumple::{
-    metric::{Metric, SquaredEuclidean},
+    metric::{Euclidean, Metric},
     space::Vector,
     valid::{GeoValidate, Validate},
 };
@@ -88,7 +88,7 @@ where
     fn is_valid<const L: usize>(&self, cfgs: &Block<N, L, F>, world: &Self::World) -> bool
     where
         LaneCount<L>: SupportedLaneCount,
-        F: SimdElement + FloatCore,
+        F: SimdElement + Float,
         Simd<F, L>: SimdArithmetic<F, L>;
 }
 
@@ -103,11 +103,14 @@ pub fn is_valid_transition<R: Robot<N, F>, const N: usize, const L: usize, F>(
     world: &R::World,
 ) -> bool
 where
-    F: SimdElement + FloatCore,
+    F: SimdElement + Float + Float + core::fmt::Debug,
     LaneCount<L>: SupportedLaneCount,
     Simd<F, L>: SimdArithmetic<F, L>,
 {
-    let distance = SquaredEuclidean.distance(start, end);
+    let distance = Euclidean.distance(start, end);
+    if distance < resolution {
+        return true;
+    }
     let l_float = <F as NumCast>::from(L).unwrap();
     let diff: Block<N, L, _> = Block(array::from_fn(|i| Simd::splat(end[i] - start[i])));
 
@@ -121,13 +124,15 @@ where
         Simd::splat(start[i]) + percents * diff[i]
     }));
 
-    let n_float = (distance / (l_float * resolution)).ceil().max(F::one());
+    let n_float = ((distance / resolution - F::one()) / l_float)
+        .ceil()
+        .max(F::zero());
     let n = <usize as NumCast>::from(n_float).unwrap();
-
+    // dbg!(n);
     let backstep: Block<N, L, _> =
         Block(array::from_fn(|i| diff[i] / Simd::splat(l_float * n_float)));
 
-    (1..n).all(|_| {
+    (0..n).all(|_| {
         for j in 0..N {
             block[j] -= backstep[j];
         }
@@ -144,7 +149,7 @@ pub struct Rake<R, W, const L: usize> {
 impl<R, W, const N: usize, const L: usize, F> Validate<Vector<N, F>> for Rake<R, W, L>
 where
     R: Robot<N, F, World = W>,
-    F: SimdElement + FloatCore,
+    F: SimdElement + Float,
     Simd<F, 1>: SimdArithmetic<F, 1>,
 {
     fn is_valid_configuration(&self, c: &Vector<N, F>) -> bool {
@@ -155,7 +160,7 @@ where
 impl<R, W, const N: usize, const L: usize, F> GeoValidate<Vector<N, F>> for Rake<R, W, L>
 where
     R: Robot<N, F, World = W>,
-    F: SimdElement + FloatCore,
+    F: SimdElement + Float + Float + core::fmt::Debug,
     LaneCount<L>: SupportedLaneCount,
     Simd<F, L>: SimdArithmetic<F, L>,
     Simd<F, 1>: SimdArithmetic<F, 1>,

@@ -44,10 +44,13 @@ fn main() {
         |&Pose2d {
              position: Vector([x, y]),
              angle,
-         }: &Pose2d| { !env.collides_rect(x, y, angle.get(), half_w, half_h) },
+         }: &Pose2d| {
+            dbg!(x, y, angle);
+            !env.collides_rect(x, y, angle.get(), half_w, half_h)
+        },
         PoseRadius {
             angle_dist: f64::PI() / 180.0,
-            position_dist: 0.01,
+            position_dist: 1.0,
         },
     );
 

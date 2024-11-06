@@ -3,7 +3,7 @@ use core::{
     array,
     ops::{Deref, DerefMut, Sub},
 };
-use num_traits::float::FloatCore;
+use num_traits::Float;
 
 use super::Interpolate;
 
@@ -46,16 +46,17 @@ impl<T, const N: usize> From<[T; N]> for Vector<N, T> {
 
 impl<const N: usize, T> Interpolate for Vector<N, T>
 where
-    T: FloatCore,
+    T: Float,
 {
+    /// This distance is the Euclidean distance.
     type Distance = T;
 
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
         let dist = SquaredEuclidean.partial_distance(self, end);
-        if dist <= radius {
+        if dist <= radius * radius {
             Err(*end)
         } else {
-            let scl = radius / dist;
+            let scl = radius / dist.sqrt();
             let inv_scl = T::one() - scl;
             Ok(Self(array::from_fn(|i| inv_scl * self[i] + scl * end[i])))
         }
@@ -71,7 +72,7 @@ where
     }
 }
 
-impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for Vector<N, T> {
+impl<const N: usize, T: Sub<Output = T> + Float> Sub for Vector<N, T> {
     type Output = Self;
     fn sub(mut self, rhs: Self) -> Self::Output {
         for (a, b) in self.iter_mut().zip(rhs.into_iter()) {
@@ -83,7 +84,7 @@ impl<const N: usize, T: Sub<Output = T> + FloatCore> Sub for Vector<N, T> {
 
 impl<T, const N: usize> KdKey for Vector<N, T>
 where
-    T: Clone + FloatCore,
+    T: Clone + Float,
 {
     fn assign(&mut self, src: &Self, k: usize) {
         self.0[k] = src.0[k];
@@ -114,9 +115,10 @@ mod tests {
     fn interpolate_real() {
         let x = Vector::new([0.0]);
         let y = Vector::new([1.0]);
-        let dist = 0.05;
+        let dist = 0.05 * 0.05;
         let z_expected = Vector::new([0.05]);
         let z = x.interpolate(&y, dist).unwrap();
+        println!("{z:?}");
         assert!((z - z_expected)[0].abs() <= 0.001);
     }
 }

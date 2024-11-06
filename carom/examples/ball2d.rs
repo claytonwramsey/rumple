@@ -27,10 +27,10 @@ fn main() {
 
     let valid = SampleInterpolate::new(
         |rv: &Vector<2, f64>| !env.collides_ball(rv[0], rv[1], ball_r),
-        0.01,
+        0.1,
     );
 
-    let grow_radius = 0.25;
+    let grow_radius = 1.0;
     let mut rrt = Rrt::new(start, KdTreeMap::new(SquaredEuclidean), &valid);
     let traj = rrt
         .grow_toward(
@@ -53,7 +53,7 @@ fn main() {
     }
     assert!(
         traj.windows(2)
-            .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= grow_radius),
+            .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= grow_radius + 1e-5),
         "all transitions must be within growth radius"
     );
 }

@@ -4,7 +4,7 @@ use kiddo::{
     float::kdtree::{Axis, KdTree},
     NearestNeighbour,
 };
-use num_traits::float::FloatCore;
+use num_traits::float::Float;
 
 use crate::{nn::NearestNeighborsMap, space::Vector};
 
@@ -40,7 +40,7 @@ impl<T: Default + Copy, const N: usize, V, M> KiddoMap<T, N, V, M> {
 impl<T, const N: usize, V> NearestNeighborsMap<Vector<N, T>, V>
     for KiddoMap<T, N, V, crate::metric::SquaredEuclidean>
 where
-    T: FloatCore + Default + AddAssign + Send + Sync + Axis,
+    T: Float + Default + AddAssign + Send + Sync + Axis,
 {
     fn insert(&mut self, key: Vector<N, T>, value: V) {
         self.tree.add(&key, self.values.len());
@@ -67,7 +67,7 @@ pub struct KiddoNearest<'a, T, const N: usize, V, M> {
 impl<T, const N: usize, V> RangeNearestNeighborsMap<Vector<N, T>, V>
     for KiddoMap<T, N, V, crate::metric::SquaredEuclidean>
 where
-    T: FloatCore + Default + AddAssign + Send + Sync + Axis,
+    T: Float + Default + AddAssign + Send + Sync + Axis,
 {
     type Distance = T;
     type RangeNearest<'q>

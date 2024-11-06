@@ -29,6 +29,8 @@ fn main() {
     let h = 1.0;
     let wall_hw = 0.05;
 
+    let step_size = 0.05; // measured in euclidean distance
+
     let mut add_vert = |x: F, start_y: F, end_y: F| {
         env.add_aabb(x - wall_hw, start_y, 0.0, x + wall_hw, end_y, 1.0);
     };
@@ -52,7 +54,6 @@ fn main() {
     add_horz(5.0, 0.0, 2.0);
     add_horz(5.0, 3.0, 5.0);
 
-    let step_size = 0.1 * 0.1; // measured in distsq
     let valid = SampleInterpolate::new(
         |&Vector([x, y, z]): &Vector<3, F>| !env.collides_ball(x, y, z, r),
         step_size,

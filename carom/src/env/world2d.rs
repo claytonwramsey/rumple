@@ -1,6 +1,6 @@
 use super::{Aabb, Ball};
 use alloc::vec::Vec;
-use num_traits::float::{FloatConst, FloatCore};
+use num_traits::float::{Float, FloatConst};
 
 /// A 2-dimensional collision-checking environment.
 pub struct World2d<T = f64> {
@@ -27,7 +27,7 @@ impl<T> World2d<T> {
 
 impl<T> World2d<T>
 where
-    T: FloatCore,
+    T: Float,
 {
     /// Determine whether a ball at position `(x, y)` with radius `r` collides with the world.
     ///

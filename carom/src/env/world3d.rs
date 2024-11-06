@@ -1,5 +1,5 @@
 use alloc::vec::Vec;
-use num_traits::float::FloatCore;
+use num_traits::float::Float;
 
 use core::simd::{prelude::*, LaneCount, Simd, SimdElement, SupportedLaneCount};
 
@@ -35,7 +35,7 @@ impl<T> World3d<T> {
 
     pub fn collides_ball(&self, x: T, y: T, z: T, r: T) -> bool
     where
-        T: FloatCore,
+        T: Float,
     {
         let rsq = r * r;
         self.balls.iter().any(
@@ -91,7 +91,7 @@ impl<T> World3d<T> {
         rs: Simd<T, L>,
     ) -> bool
     where
-        T: SimdElement + FloatCore,
+        T: SimdElement + Float,
         Simd<T, L>: SimdArithmetic<T, L>,
         LaneCount<L>: SupportedLaneCount,
     {

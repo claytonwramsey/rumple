@@ -6,7 +6,7 @@ use crate::{
     nn::DistanceAabb,
     space::{Angle, Vector},
 };
-use num_traits::{float::FloatCore, FloatConst, Zero};
+use num_traits::{Float, FloatConst, Zero};
 
 /// A metric between configurations.
 pub trait Metric<C> {
@@ -30,7 +30,7 @@ impl SquaredEuclidean {
     /// ordered.
     pub fn partial_distance<T, const N: usize>(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> T
     where
-        T: FloatCore,
+        T: Float,
     {
         let mut total = T::zero();
         for (&a, &b) in c1.iter().zip(c2.iter()) {
@@ -42,7 +42,7 @@ impl SquaredEuclidean {
 
 impl<T, const N: usize> Metric<Vector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore,
+    T: Float,
 {
     type Distance = T;
 
@@ -53,7 +53,7 @@ where
 
 impl<T, const N: usize> DistanceAabb<Vector<N, T>> for SquaredEuclidean
 where
-    T: FloatCore,
+    T: Float,
 {
     fn distance_to_aabb(
         &self,
@@ -64,7 +64,7 @@ where
         Self.distance(
             c,
             &Vector(array::from_fn(|i| {
-                FloatCore::clamp(c[i], aabb_lo[i], aabb_hi[i])
+                Float::clamp(c[i], aabb_lo[i], aabb_hi[i])
             })),
         )
     }
@@ -72,7 +72,7 @@ where
 
 impl<T> Metric<Angle<T>> for Euclidean
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     type Distance = T;
 
@@ -81,9 +81,23 @@ where
     }
 }
 
+impl<const N: usize, T> Metric<Vector<N, T>> for Euclidean
+where
+    T: Float,
+{
+    type Distance = T;
+    fn distance(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> Self::Distance {
+        let mut total = T::zero();
+        for (&a, &b) in c1.iter().zip(c2.iter()) {
+            total = total + (a - b) * (a - b);
+        }
+        total.sqrt()
+    }
+}
+
 impl<T> Metric<Angle<T>> for SquaredEuclidean
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     type Distance = T;
 
@@ -95,7 +109,7 @@ where
 
 impl<T> DistanceAabb<Angle<T>> for Euclidean
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     fn distance_to_aabb(
         &self,
@@ -113,7 +127,7 @@ where
 
 impl<T> DistanceAabb<Angle<T>> for SquaredEuclidean
 where
-    T: FloatCore + FloatConst,
+    T: Float + FloatConst,
 {
     fn distance_to_aabb(
         &self,

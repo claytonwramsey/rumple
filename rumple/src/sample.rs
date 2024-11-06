@@ -3,7 +3,7 @@
 use core::array;
 
 use crate::space::{Angle, Pose2d, Vector};
-use num_traits::{float::FloatCore, FloatConst};
+use num_traits::{float::Float, FloatConst};
 use rand::{
     distributions::{uniform::SampleUniform, Bernoulli, Distribution},
     Rng,
@@ -46,7 +46,7 @@ pub struct Everywhere;
 
 impl<const N: usize, T, RNG: Rng> Sample<Vector<N, T>, RNG> for Rectangle<Vector<N, T>>
 where
-    T: FloatCore + SampleUniform,
+    T: Float + SampleUniform,
 {
     fn sample(&self, rng: &mut RNG) -> Vector<N, T> {
         Vector::new(array::from_fn(|i| rng.gen_range(self.min[i]..=self.max[i])))
@@ -55,7 +55,7 @@ where
 
 impl<T, RNG: Rng> Sample<Angle<T>, RNG> for Everywhere
 where
-    T: FloatCore + FloatConst + SampleUniform,
+    T: Float + FloatConst + SampleUniform,
 {
     fn sample(&self, rng: &mut RNG) -> Angle<T> {
         unsafe { Angle::new_unchecked(rng.gen_range(T::zero()..T::TAU())) }
@@ -64,7 +64,7 @@ where
 
 impl<T, RNG: Rng> Sample<Pose2d<T>, RNG> for Rectangle<Vector<2, T>>
 where
-    T: FloatConst + FloatCore + SampleUniform,
+    T: FloatConst + Float + SampleUniform,
 {
     fn sample(&self, rng: &mut RNG) -> Pose2d<T> {
         Pose2d {

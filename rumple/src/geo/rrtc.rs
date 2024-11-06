@@ -264,7 +264,7 @@ mod tests {
         }
         assert!(
             res.windows(2)
-                .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= radius),
+                .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= radius + 1e-5),
             "all transitions must be within growth radius"
         );
     }
