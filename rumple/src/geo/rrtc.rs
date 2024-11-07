@@ -140,9 +140,10 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
             let target = space_sampler.sample(rng);
             let t = &mut self.trees[self.next as usize];
             let (start_cfg, &Node(start_id)) = t.nn.nearest(&target).expect("NN must be nonempty");
-            let end_cfg = match start_cfg.interpolate(&target, radius.clone()) {
-                Ok(c) | Err(c) => c,
-            };
+            let end_cfg = start_cfg
+                .interpolate(&target, radius.clone())
+                .next()
+                .unwrap_or(target.clone());
 
             if !self.valid.is_valid_configuration(&end_cfg)
                 || !self.valid.is_valid_transition(start_cfg, &end_cfg)
@@ -163,9 +164,10 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
             let target = end_cfg;
 
             loop {
-                let (end_cfg, reached) = match start_cfg.interpolate(&target, radius.clone()) {
-                    Ok(c) => (c, false),
-                    Err(c) => (c, true),
+                let (end_cfg, reached) = match start_cfg.interpolate(&target, radius.clone()).next()
+                {
+                    Some(c) => (c, false),
+                    None => (target.clone(), true),
                 };
 
                 if !self.valid.is_valid_configuration(&end_cfg)

@@ -105,18 +105,49 @@ impl<T> AsRef<T> for Angle<T> {
     }
 }
 
+impl<T: FloatConst + Float> std::ops::Add for Angle<T> {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let r = self.0 + rhs.0;
+        Angle(if r > T::TAU() { r - T::TAU() } else { r })
+    }
+}
+
 impl<T> Interpolate for Angle<T>
 where
     T: Float + FloatConst,
 {
+    type Interpolation<'a> = AngleInterpolation<T> where Self: 'a;
     type Distance = T;
-    fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Result<Self, Self> {
-        let dist = self.signed_distance(end);
-        if dist.abs() <= radius {
-            Err(end)
-        } else {
-            Ok(Self((dist.signum() * radius + self.0).rem(T::TAU())))
+    fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
+        // catch NaN or negatives
+        assert!(
+            !(radius >= T::zero()),
+            "cannot interpolate by negative or NaN value"
+        );
+        AngleInterpolation {
+            start: *self,
+            end,
+            radius,
         }
+    }
+}
+
+pub struct AngleInterpolation<T> {
+    end: Angle<T>,
+    start: Angle<T>,
+    radius: T,
+}
+
+impl<T: Float + FloatConst> Iterator for AngleInterpolation<T> {
+    type Item = Angle<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let dist = self.start.signed_distance(self.end);
+        (dist.abs() <= self.radius).then(|| {
+            self.start = Angle((dist.signum() * self.radius + self.start.0).rem(T::TAU()));
+            self.start
+        })
     }
 }
 

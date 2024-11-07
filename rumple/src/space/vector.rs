@@ -3,7 +3,7 @@ use core::{
     array,
     ops::{Deref, DerefMut, Sub},
 };
-use num_traits::Float;
+use num_traits::{Float, NumCast};
 
 use super::Interpolate;
 
@@ -51,15 +51,46 @@ where
     /// This distance is the Euclidean distance.
     type Distance = T;
 
-    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
+    type Interpolation<'a> = VectorInterpolation<N, T> where T: 'a;
+
+    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
         let dist = SquaredEuclidean.partial_distance(self, end);
+
         if dist <= radius * radius {
-            Err(*end)
+            VectorInterpolation {
+                n: 0,
+                start: *self,
+                step: *self,
+            }
         } else {
             let scl = radius / dist.sqrt();
-            let inv_scl = T::one() - scl;
-            Ok(Self(array::from_fn(|i| inv_scl * self[i] + scl * end[i])))
+            let n = <usize as NumCast>::from(scl.recip())
+                .expect("cannot interpolate with negative or NaN radius");
+            VectorInterpolation {
+                n,
+                start: *self,
+                step: Vector(array::from_fn(|i| scl * (end[i] - self[i]))),
+            }
         }
+    }
+}
+
+pub struct VectorInterpolation<const N: usize, T> {
+    n: usize,
+    start: Vector<N, T>,
+    step: Vector<N, T>,
+}
+
+impl<const N: usize, T: Float> Iterator for VectorInterpolation<N, T> {
+    type Item = Vector<N, T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        (self.n != 0).then(|| {
+            self.n -= 1;
+            for (x, s) in self.start.iter_mut().zip(self.step.0) {
+                *x = *x + s;
+            }
+            self.start
+        })
     }
 }
 
@@ -117,7 +148,7 @@ mod tests {
         let y = Vector::new([1.0]);
         let dist = 0.05;
         let z_expected = Vector::new([0.05]);
-        let z = x.interpolate(&y, dist).unwrap();
+        let z = x.interpolate(&y, dist).next().unwrap();
         println!("{z:?}");
         assert!((z - z_expected)[0].abs() <= 0.001);
     }

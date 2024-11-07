@@ -2,7 +2,7 @@ use num_traits::{float::Float, FloatConst};
 
 use crate::{nn::KdKey, sample::Sample, space::Interpolate};
 
-use super::{Angle, PoseRadius, Vector};
+use super::{angle::AngleInterpolation, vector::VectorInterpolation, Angle, PoseRadius, Vector};
 
 #[derive(Clone, Copy, Debug)]
 /// A pose in 2 dimensions.
@@ -70,15 +70,25 @@ where
 {
     type Distance = PoseRadius<T>;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
-        let pos_res = self
-            .position
-            .interpolate(&end.position, radius.position_dist);
-        let angle_res = self.angle.interpolate(&end.angle, radius.angle_dist);
-
-        match (pos_res, angle_res) {
-            (Err(position), Err(angle)) => Err(Self { position, angle }),
-            (Ok(position) | Err(position), Ok(angle) | Err(angle)) => Ok(Self { position, angle }),
+        Pose2dInterpolation {
+            angle_iter: self.angle.interpolate(&end.angle, &radius.angle_dist),
+            pos_iter,
         }
+    }
+}
+
+pub struct Pose2dInterpolation<T> {
+    angle_iter: AngleInterpolation<T>,
+    pos_iter: VectorInterpolation<2, T>,
+}
+
+impl<T: Float + FloatConst> Iterator for Pose2dInterpolation<T> {
+    type Item = Pose2d<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Pose2d {
+            angle: self.angle_iter.next()?,
+            position: self.pos_iter.next()?,
+        })
     }
 }
 
