@@ -115,7 +115,7 @@ mod tests {
     fn interpolate_real() {
         let x = Vector::new([0.0]);
         let y = Vector::new([1.0]);
-        let dist = 0.05 * 0.05;
+        let dist = 0.05;
         let z_expected = Vector::new([0.05]);
         let z = x.interpolate(&y, dist).unwrap();
         println!("{z:?}");

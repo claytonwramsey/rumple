@@ -112,33 +112,30 @@ where
         return true;
     }
     let l_float = <F as NumCast>::from(L).unwrap();
-    let diff: Block<N, L, _> = Block(array::from_fn(|i| Simd::splat(end[i] - start[i])));
+    let diff: [F; N] = array::from_fn(|i| end[i] - start[i]);
 
     // start from "end" state as it is more likely to have unchecked configurations
-    let percents = Simd::from_array(array::from_fn(|i| {
-        <F as NumCast>::from(i + 1).unwrap() / l_float
-    }));
+    let percents = Simd::from_array(array::from_fn(|j| <F as NumCast>::from(j + 1).unwrap()))
+        * Simd::splat((distance - resolution) / l_float / distance);
 
     // assumes rake is same as vector width. hack!
     let mut block: Block<N, L, _> = Block(array::from_fn(|i| {
-        Simd::splat(start[i]) + percents * diff[i]
+        Simd::splat(start[i]) + percents * Simd::splat(diff[i])
     }));
 
-    let n_float = ((distance / resolution - F::one()) / l_float)
-        .ceil()
-        .max(F::zero());
+    let n_float = ((distance / resolution - F::one()) / l_float).ceil();
     let n = <usize as NumCast>::from(n_float).unwrap();
-    // dbg!(n);
-    let backstep: Block<N, L, _> =
-        Block(array::from_fn(|i| diff[i] / Simd::splat(l_float * n_float)));
+    let backstep: Vector<N, _> = Vector(array::from_fn(|i| diff[i] / (l_float * n_float)));
 
-    (0..n).all(|_| {
-        for j in 0..N {
-            block[j] -= backstep[j];
+    for _ in 0..n {
+        if !robot.is_valid(&block, world) {
+            return false;
         }
-
-        robot.is_valid(&block, world)
-    })
+        for j in 0..N {
+            block[j] -= Simd::splat(backstep[j]);
+        }
+    }
+    true
 }
 
 pub struct Rake<R, W, const L: usize> {
