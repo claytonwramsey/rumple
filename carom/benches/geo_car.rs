@@ -1,5 +1,3 @@
-use core::hint::black_box;
-
 use carom::env::World2d;
 use num_traits::FloatConst;
 use rand::SeedableRng;
@@ -64,9 +62,9 @@ fn main() {
         inline:
         Bench::new("geo_car_rrtc")
             .with_samples(1000)
-            .run(|| black_box(rrt_connect(
-                black_box(start),
-                black_box(goal),
+            .run(|| dbg!(rrt_connect(
+                start,
+                goal,
                 KdTreeMap::new(WeightedPoseDistance {
                     position_metric: SquaredEuclidean,
                     position_weight: 1.0,
@@ -80,7 +78,7 @@ fn main() {
                 },
                 grow_radius,
                 &mut Solved::new(),
-                &mut black_box(ChaCha20Rng::seed_from_u64(2707)),
+                &mut ChaCha20Rng::seed_from_u64(2707),
             )
             .unwrap())
         )

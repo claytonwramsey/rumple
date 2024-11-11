@@ -1,4 +1,4 @@
-use num_traits::{float::Float, FloatConst, Zero};
+use num_traits::{float::Float, FloatConst, NumCast, Zero};
 
 use crate::{nn::KdKey, space::Interpolate};
 
@@ -110,7 +110,7 @@ impl<T: FloatConst + Float> std::ops::Add for Angle<T> {
 
     fn add(self, rhs: Self) -> Self::Output {
         let r = self.0 + rhs.0;
-        Angle(if r > T::TAU() { r - T::TAU() } else { r })
+        Self(if r > T::TAU() { r - T::TAU() } else { r })
     }
 }
 
@@ -121,33 +121,45 @@ where
     type Interpolation<'a> = AngleInterpolation<T> where Self: 'a;
     type Distance = T;
     fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
-        // catch NaN or negatives
-        assert!(
-            !(radius >= T::zero()),
-            "cannot interpolate by negative or NaN value"
-        );
+        #[expect(clippy::neg_cmp_op_on_partial_ord)]
+        {
+            // catch NaN or negatives
+            // negation is required to catch NaN
+            assert!(
+                !(radius >= T::zero()),
+                "cannot interpolate by negative or NaN value"
+            );
+        }
+        let dist = self.signed_distance(end);
+        let step = Self((dist.signum() * radius).rem(T::TAU()));
+        let n = <usize as NumCast>::from((dist.abs() / radius).floor()).unwrap();
         AngleInterpolation {
             start: *self,
-            end,
-            radius,
+            step,
+            n,
         }
     }
 }
 
+#[expect(clippy::module_name_repetitions)]
 pub struct AngleInterpolation<T> {
-    end: Angle<T>,
     start: Angle<T>,
-    radius: T,
+    pub(crate) step: Angle<T>,
+    pub(crate) n: usize,
 }
 
 impl<T: Float + FloatConst> Iterator for AngleInterpolation<T> {
     type Item = Angle<T>;
     fn next(&mut self) -> Option<Self::Item> {
-        let dist = self.start.signed_distance(self.end);
-        (dist.abs() <= self.radius).then(|| {
-            self.start = Angle((dist.signum() * self.radius + self.start.0).rem(T::TAU()));
+        (self.n > 0).then(|| {
+            self.n -= 1;
+            self.start = self.start + self.step;
             self.start
         })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.n, Some(self.n))
     }
 }
 

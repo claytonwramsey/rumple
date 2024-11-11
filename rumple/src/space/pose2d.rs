@@ -1,8 +1,15 @@
-use num_traits::{float::Float, FloatConst};
+use core::array;
 
-use crate::{nn::KdKey, sample::Sample, space::Interpolate};
+use num_traits::{float::Float, FloatConst, NumCast};
 
-use super::{angle::AngleInterpolation, vector::VectorInterpolation, Angle, PoseRadius, Vector};
+use crate::{
+    metric::{Euclidean, Metric},
+    nn::KdKey,
+    sample::Sample,
+    space::Interpolate,
+};
+
+use super::{Angle, PoseRadius, Vector};
 
 #[derive(Clone, Copy, Debug)]
 /// A pose in 2 dimensions.
@@ -69,25 +76,95 @@ where
     T: Float + FloatConst,
 {
     type Distance = PoseRadius<T>;
-    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Result<Self, Self> {
+    type Interpolation<'a> = Pose2dInterpolation<T> where T: 'a;
+    fn interpolate(&self, end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
+        let pos_dist = Euclidean.distance(&self.position, &end.position);
+        let ang_dist = self.angle.signed_distance(end.angle);
+        let ang_n = <usize as NumCast>::from((ang_dist.abs() / radius.angle_dist).floor()).unwrap();
+        let pos_n = <usize as NumCast>::from((pos_dist / radius.position_dist).floor()).unwrap();
+        let n_min = ang_n.min(pos_n);
+        if n_min == 0 {
+            println!("zero-step");
+            return Pose2dInterpolation {
+                n: 0,
+                start: *self,
+                step: *self,
+            };
+        }
+        let pos_scl = radius.position_dist / pos_dist;
+        let mut pos_step = array::from_fn(|i| pos_scl * (end.position[i] - self.position[i]));
+        let mut ang_step = (ang_dist.signum() * radius.angle_dist).rem(T::TAU());
+        assert!(
+            Euclidean.distance(&Vector(pos_step), &Vector([T::zero(); 2]))
+                <= radius.position_dist
+                    + (-(T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()))
+                    .exp2()
+        );
+
+        let n = if ang_n < pos_n {
+            ang_step = ang_step * T::from(ang_n).unwrap() / T::from(pos_n).unwrap();
+            pos_n
+        } else {
+            let scl = T::from(pos_n).unwrap() / T::from(ang_n).unwrap();
+            pos_step = pos_step.map(|x| x * scl);
+            ang_n
+        };
+        if ang_step.is_sign_negative() {
+            ang_step = ang_step + T::TAU();
+        }
+        assert!(ang_step.is_sign_positive() && ang_step < T::TAU());
+        println!("n={n}");
+
+        let step = Self {
+            position: Vector(pos_step),
+            angle: Angle::new(ang_step),
+        };
+        assert!(
+            Euclidean.distance(&step.position, &Vector([T::zero(); 2]))
+                <= radius.position_dist
+                    + (-(T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()))
+                    .exp2()
+        );
         Pose2dInterpolation {
-            angle_iter: self.angle.interpolate(&end.angle, &radius.angle_dist),
-            pos_iter,
+            n,
+            start: *self,
+            step,
         }
     }
 }
 
+#[expect(clippy::module_name_repetitions)]
 pub struct Pose2dInterpolation<T> {
-    angle_iter: AngleInterpolation<T>,
-    pos_iter: VectorInterpolation<2, T>,
+    n: usize,
+    start: Pose2d<T>,
+    step: Pose2d<T>,
 }
 
 impl<T: Float + FloatConst> Iterator for Pose2dInterpolation<T> {
     type Item = Pose2d<T>;
     fn next(&mut self) -> Option<Self::Item> {
-        Some(Pose2d {
-            angle: self.angle_iter.next()?,
-            position: self.pos_iter.next()?,
+        (self.n > 0).then(|| {
+            self.n -= 1;
+            self.start.position.0 = [
+                self.start.position[0] + self.step.position[0],
+                self.start.position[1] + self.step.position[1],
+            ];
+            self.start.angle = self.start.angle + self.step.angle;
+            self.start
         })
     }
 }

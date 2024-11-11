@@ -149,10 +149,10 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
-            let (reached, end_cfg) = match start_cfg.interpolate(&target, radius.clone()).next() {
-                Some(c) => (false, c),
-                None => (true, target.clone()),
-            };
+            let (reached, end_cfg) = start_cfg
+                .interpolate(&target, radius.clone())
+                .next()
+                .map_or_else(|| (true, target.clone()), |c| (false, c));
             if !self.valid.is_valid_configuration(&end_cfg)
                 || !self.valid.is_valid_transition(start_cfg, &end_cfg)
             {

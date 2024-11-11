@@ -79,14 +79,9 @@ where
     R: Clone,
 {
     fn is_valid_transition(&self, start: &C, end: &C) -> bool {
-        let mut interp = start.interpolate(end, self.radius.clone());
-        while let Ok(c) = interp {
-            if !self.is_valid_configuration(&c) {
-                return false;
-            }
-            interp = c.interpolate(end, self.radius.clone());
-        }
-        true
+        start
+            .interpolate(end, self.radius.clone())
+            .all(|c| self.is_valid_configuration(&c))
     }
 }
 

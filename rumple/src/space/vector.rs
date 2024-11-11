@@ -69,16 +69,17 @@ where
             VectorInterpolation {
                 n,
                 start: *self,
-                step: Vector(array::from_fn(|i| scl * (end[i] - self[i]))),
+                step: Self(array::from_fn(|i| scl * (end[i] - self[i]))),
             }
         }
     }
 }
 
+#[expect(clippy::module_name_repetitions)]
 pub struct VectorInterpolation<const N: usize, T> {
-    n: usize,
+    pub(crate) n: usize,
     start: Vector<N, T>,
-    step: Vector<N, T>,
+    pub(crate) step: Vector<N, T>,
 }
 
 impl<const N: usize, T: Float> Iterator for VectorInterpolation<N, T> {

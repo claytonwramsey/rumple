@@ -134,85 +134,88 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
 
         let mut res = None;
 
-        while !timeout.is_over() {
+        'a: while !timeout.is_over() {
+            println!(
+                "forward size {}, reverse size {}",
+                self.trees[0].configurations.len(),
+                self.trees[1].configurations.len()
+            );
             // begin with RRTC extend procedure
             timeout.update_sample_count(1);
-            let target = space_sampler.sample(rng);
+            let q_rand = space_sampler.sample(rng);
             let t = &mut self.trees[self.next as usize];
-            let (start_cfg, &Node(start_id)) = t.nn.nearest(&target).expect("NN must be nonempty");
-            let end_cfg = start_cfg
-                .interpolate(&target, radius.clone())
+            let (q_near, &Node(q_near_id)) = t.nn.nearest(&q_rand).expect("NN must be nonempty");
+            let q_new = q_near
+                .interpolate(&q_rand, radius.clone())
                 .next()
-                .unwrap_or(target.clone());
+                .unwrap_or_else(|| q_rand.clone());
 
-            if !self.valid.is_valid_configuration(&end_cfg)
-                || !self.valid.is_valid_transition(start_cfg, &end_cfg)
+            if !self.valid.is_valid_configuration(&q_new)
+                || !self.valid.is_valid_transition(q_near, &q_new)
             {
                 continue;
             }
             timeout.update_node_count(1);
-            let new_id = t.configurations.len();
-            t.configurations.push(end_cfg.clone());
-            t.parents.push(start_id);
-            t.nn.insert(end_cfg.clone(), Node(new_id));
+            let q_new_id = t.configurations.len();
+            t.configurations.push(q_new.clone());
+            t.parents.push(q_near_id);
+            t.nn.insert(q_new.clone(), Node(q_new_id));
 
             self.next ^= 1;
+
+            // attempt to connect the two trees with this newly created node
             let tb = &mut self.trees[self.next as usize];
-            let (mut start_cfg, Node(mut start_id)) =
-                tb.nn.nearest(&end_cfg).expect("NN must be nonempty");
+            let (q_old_connect_r, Node(mut q_old_connect_id)) =
+                tb.nn.nearest(&q_new).expect("NN must be nonempty");
+            let mut q_old_connect = q_old_connect_r.clone();
 
-            let target = end_cfg;
-
-            loop {
-                let (end_cfg, reached) = match start_cfg.interpolate(&target, radius.clone()).next()
+            for q_new_connect in q_old_connect.clone().interpolate(&q_new, radius.clone()) {
+                if !self.valid.is_valid_configuration(&q_new_connect)
+                    || !self
+                        .valid
+                        .is_valid_transition(&q_old_connect, &q_new_connect)
                 {
-                    Some(c) => (c, false),
-                    None => (target.clone(), true),
-                };
-
-                if !self.valid.is_valid_configuration(&end_cfg)
-                    || !self.valid.is_valid_transition(start_cfg, &end_cfg)
-                {
-                    break;
+                    continue 'a;
                 }
 
-                if reached {
-                    // connected!
-                    timeout.notify_solved();
-                    self.cross_edges.push(if self.next == 1 {
-                        (new_id, start_id)
-                    } else {
-                        (start_id, new_id)
-                    });
+                let q_new_connect_id = tb.configurations.len();
 
-                    let mut traj = Vec::new();
-                    let (mut p0, mut p1) = self.cross_edges.last().unwrap();
+                tb.configurations.push(q_new_connect.clone());
+                tb.parents.push(q_old_connect_id);
+                tb.nn.insert(q_new_connect.clone(), Node(q_new_connect_id));
 
-                    // extract first half of path
-                    while p0 != 0 {
-                        traj.push(self.trees[0].configurations[p0].clone());
-                        p0 = self.trees[0].parents[p0];
-                    }
-                    traj.push(self.trees[0].configurations[0].clone());
-                    traj.reverse();
+                q_old_connect = q_new_connect;
+                q_old_connect_id = q_new_connect_id;
+            }
 
-                    // extract second half of path
-                    while p1 != 0 {
-                        traj.push(self.trees[1].configurations[p1].clone());
-                        p1 = self.trees[1].parents[p1];
-                    }
-                    traj.push(self.trees[1].configurations[0].clone());
+            if self.valid.is_valid_transition(&q_old_connect, &q_new) {
+                // connected!
+                timeout.notify_solved();
+                self.cross_edges.push(if self.next == 1 {
+                    (q_new_id, q_old_connect_id)
+                } else {
+                    (q_old_connect_id, q_new_id)
+                });
 
-                    res = Some(traj);
-                    break;
+                let mut traj = Vec::new();
+                let (mut p0, mut p1) = self.cross_edges.last().unwrap();
+
+                // extract first half of path
+                while p0 != 0 {
+                    traj.push(self.trees[0].configurations[p0].clone());
+                    p0 = self.trees[0].parents[p0];
                 }
-                let ext_id = tb.configurations.len();
+                traj.push(self.trees[0].configurations[0].clone());
+                traj.reverse();
 
-                tb.configurations.push(end_cfg.clone());
-                start_cfg = tb.configurations.last().unwrap();
-                tb.parents.push(start_id);
-                start_id = ext_id;
-                tb.nn.insert(end_cfg.clone(), Node(ext_id));
+                // extract second half of path
+                while p1 != 0 {
+                    traj.push(self.trees[1].configurations[p1].clone());
+                    p1 = self.trees[1].parents[p1];
+                }
+                traj.push(self.trees[1].configurations[0].clone());
+
+                res = Some(traj);
             }
         }
 
