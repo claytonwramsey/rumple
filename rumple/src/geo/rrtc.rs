@@ -6,12 +6,6 @@ use crate::{
     nn::NearestNeighborsMap, sample::Sample, space::Interpolate, time::Timeout, valid::GeoValidate,
 };
 
-mod private {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-    pub struct Node(pub usize);
-}
-use private::Node;
-
 #[derive(Clone, Debug)]
 /// A planner that combines two [`Rrt`]s growing toward each other.
 ///
@@ -68,7 +62,7 @@ pub fn rrt_connect<C, NN, V, SP, TC, R, RNG>(
     rng: &mut RNG,
 ) -> Option<Vec<C>>
 where
-    NN: NearestNeighborsMap<C, Node> + Clone,
+    NN: NearestNeighborsMap<C, usize> + Clone,
     V: GeoValidate<C>,
     SP: Sample<C, RNG>,
     R: Clone,
@@ -82,12 +76,12 @@ where
 impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
     pub fn new(mut nn: NN, start: C, goal: C, valid: &'a V) -> Self
     where
-        NN: Clone + NearestNeighborsMap<C, Node>,
+        NN: Clone + NearestNeighborsMap<C, usize>,
         C: Clone,
     {
         let mut nn1 = nn.clone();
-        nn.insert(start.clone(), Node(0));
-        nn1.insert(goal.clone(), Node(0));
+        nn.insert(start.clone(), 0);
+        nn1.insert(goal.clone(), 0);
         Self {
             trees: [
                 HalfTree {
@@ -119,7 +113,7 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
         V: GeoValidate<C>,
         SP: Sample<C, RNG>,
         TC: Timeout,
-        NN: NearestNeighborsMap<C, Node>,
+        NN: NearestNeighborsMap<C, usize>,
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
     {
@@ -139,7 +133,7 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
             timeout.update_sample_count(1);
             let q_rand = space_sampler.sample(rng);
             let t = &mut self.trees[self.next as usize];
-            let (q_near, &Node(q_near_id)) = t.nn.nearest(&q_rand).expect("NN must be nonempty");
+            let (q_near, &q_near_id) = t.nn.nearest(&q_rand).expect("NN must be nonempty");
             let q_new = q_near
                 .interpolate(&q_rand, radius.clone())
                 .next()
@@ -154,14 +148,14 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
             let q_new_id = t.configurations.len();
             t.configurations.push(q_new.clone());
             t.parents.push(q_near_id);
-            t.nn.insert(q_new.clone(), Node(q_new_id));
+            t.nn.insert(q_new.clone(), q_new_id);
 
             self.next ^= 1;
 
             // attempt to connect the two trees with this newly created node
             let tb = &mut self.trees[self.next as usize];
-            let (q_old_connect_r, Node(mut q_old_connect_id)) =
-                tb.nn.nearest(&q_new).expect("NN must be nonempty");
+            let (q_old_connect_r, &id) = tb.nn.nearest(&q_new).expect("NN must be nonempty");
+            let mut q_old_connect_id = id;
             let mut q_old_connect = q_old_connect_r.clone();
 
             for q_new_connect in q_old_connect.clone().interpolate(&q_new, radius.clone()) {
@@ -177,7 +171,7 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
 
                 tb.configurations.push(q_new_connect.clone());
                 tb.parents.push(q_old_connect_id);
-                tb.nn.insert(q_new_connect.clone(), Node(q_new_connect_id));
+                tb.nn.insert(q_new_connect.clone(), q_new_connect_id);
 
                 q_old_connect = q_new_connect;
                 q_old_connect_id = q_new_connect_id;

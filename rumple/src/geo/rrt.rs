@@ -43,13 +43,6 @@ pub struct Rrt<'a, C, NN, V> {
     valid: &'a V,
 }
 
-/// Workaround module to avoid exposing implementation details of `Node` to consumers.
-mod private {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
-    pub struct Node(pub usize);
-}
-use private::Node;
-
 #[expect(clippy::too_many_arguments)]
 /// Plan between two configurations using an [`Rrt`].
 ///
@@ -77,7 +70,7 @@ pub fn rrt<C, NN, V, SP, G, TC, TG, R, RNG>(
     rng: &mut RNG,
 ) -> Option<Vec<C>>
 where
-    NN: NearestNeighborsMap<C, Node>,
+    NN: NearestNeighborsMap<C, usize>,
     V: GeoValidate<C>,
     SP: Sample<C, RNG>,
     G: Sample<C, RNG>,
@@ -104,11 +97,11 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
     /// `valid` as its state validator.
     pub fn new(root: C, mut nn: NN, valid: &'a V) -> Self
     where
-        NN: NearestNeighborsMap<C, Node>,
+        NN: NearestNeighborsMap<C, usize>,
         C: Clone,
         V: Validate<C>,
     {
-        nn.insert(root.clone(), Node(0));
+        nn.insert(root.clone(), 0);
         Self {
             configurations: vec![root],
             parent_ids: vec![usize::MAX],
@@ -130,7 +123,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         V: GeoValidate<C>,
         SP: Sample<C, RNG>,
         G: Sample<C, RNG>,
-        NN: NearestNeighborsMap<C, Node>,
+        NN: NearestNeighborsMap<C, usize>,
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
         TG: Sample<bool, RNG>,
@@ -147,7 +140,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
             } else {
                 space_sampler.sample(rng)
             };
-            let (start_cfg, &Node(start_id)) = self
+            let (start_cfg, &start_id) = self
                 .nn
                 .nearest(&target)
                 .expect("NN must always have elements");
@@ -169,7 +162,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
                 self.parent_ids.len(),
                 "number of configurations and parents must be equal"
             );
-            self.nn.insert(end_cfg, Node(new_id));
+            self.nn.insert(end_cfg, new_id);
             if sample_goal && reached {
                 timeout.notify_solved();
                 soln = Some(new_id);
@@ -206,7 +199,7 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
         G: Sample<C, RNG>,
         TG: Sample<bool, RNG>,
         TC: Timeout,
-        NN: NearestNeighborsMap<C, Node>,
+        NN: NearestNeighborsMap<C, usize>,
         R: Clone,
         C: Clone + Interpolate<Distance = R>,
     {

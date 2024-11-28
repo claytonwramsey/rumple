@@ -41,12 +41,6 @@ pub struct Prm<'a, C, NN, V> {
     valid: &'a V,
 }
 
-mod private {
-    #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
-    pub struct Node(pub(super) usize);
-}
-use private::Node;
-
 use super::Graph;
 
 #[derive(Clone, Debug)]
@@ -81,7 +75,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     pub fn grow_r<R, TC, S, RNG>(&mut self, radius: R, timeout: &mut TC, sample: &S, rng: &mut RNG)
     where
         V: GeoValidate<C>,
-        NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
+        NN: RangeNearestNeighborsMap<C, usize, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
         C: Clone,
@@ -105,11 +99,11 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         timeout: &mut TC,
         sample: &S,
         rng: &mut RNG,
-        start: Node,
-        goal: Node,
+        start: usize,
+        goal: usize,
     ) where
         V: GeoValidate<C>,
-        NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
+        NN: RangeNearestNeighborsMap<C, usize, Distance = R>,
         TC: Timeout,
         S: Sample<C, RNG>,
         C: Clone,
@@ -121,7 +115,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
             if self.insert_r(c, radius.clone()).is_some() {
                 timeout.update_node_count(1);
             }
-            if self.components.find_cache(start.0) == self.components.find_cache(goal.0) {
+            if self.components.find_cache(start) == self.components.find_cache(goal) {
                 timeout.notify_solved();
             }
         }
@@ -130,10 +124,10 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// Insert a configuration into the graph, connecting it to all other nodes in the graph within
     /// a distance of `radius`. Returns the ID of the node it created, or `None` if the given
     /// configuration was invalid.
-    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<Node>
+    pub fn insert_r<R>(&mut self, c: C, radius: R) -> Option<usize>
     where
         V: GeoValidate<C>,
-        NN: RangeNearestNeighborsMap<C, Node, Distance = R>,
+        NN: RangeNearestNeighborsMap<C, usize, Distance = R>,
         C: Clone,
     {
         if !self.valid.is_valid_configuration(&c) {
@@ -146,7 +140,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         for n in self
             .nn
             .nearest_within_r(&c, radius)
-            .filter_map(|(q, &Node(n))| self.valid.is_valid_transition(&c, q).then_some(n))
+            .filter_map(|(q, &n)| self.valid.is_valid_transition(&c, q).then_some(n))
         {
             self.components.unify(new_component, n);
             // assume bidirectionality
@@ -154,21 +148,21 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
             self.edges[n].push(i);
         }
 
-        self.nn.insert(c.clone(), Node(i));
+        self.nn.insert(c.clone(), i);
         self.configurations.push(c);
         debug_assert_eq!(
             self.edges.len(),
             self.configurations.len(),
             "configuration and edge buffers must have equal length"
         );
-        Some(Node(i))
+        Some(i)
     }
 
     /// Get the configuration in the graph corresponding to the given node ID.
     ///
     /// Returns `None` if no such node with the given ID exists.
-    pub fn configuration(&self, id: Node) -> Option<&C> {
-        self.configurations.get(id.0)
+    pub fn configuration(&self, id: usize) -> Option<&C> {
+        self.configurations.get(id)
     }
 
     /// Compute a path between `start` and `end`.
@@ -176,22 +170,22 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     /// # Panics
     ///
     /// This function may panic if `start` or `end` point to nodes which do not exist in `self`.
-    pub fn path<M, D>(&self, start: Node, end: Node, cost: &M) -> Option<Vec<Node>>
+    pub fn path<M, D>(&self, start: usize, end: usize, cost: &M) -> Option<Vec<usize>>
     where
         M: Metric<C, Distance = D>,
         D: Add + Zero + PartialOrd + Clone,
     {
         // use A*
         assert!(
-            (0..self.configurations.len()).contains(&start.0),
+            (0..self.configurations.len()).contains(&start),
             "invalid start configuration ID"
         );
         assert!(
-            (0..self.configurations.len()).contains(&end.0),
+            (0..self.configurations.len()).contains(&end),
             "invalid end configuration ID"
         );
 
-        if self.components.find(start.0) != self.components.find(end.0) {
+        if self.components.find(start) != self.components.find(end) {
             // different components - no solution exists
             return None;
         }
@@ -202,24 +196,24 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         let mut g_score: Vec<_> = iter::repeat_with(|| None)
             .take(self.configurations.len())
             .collect();
-        g_score[end.0] = Some(D::zero());
+        g_score[end] = Some(D::zero());
 
         // plan from goal to start to save a reversal
-        let end_c = &self.configurations[end.0];
+        let end_c = &self.configurations[end];
 
         open.push(Open {
-            node: end.0,
+            node: end,
             f_score: D::zero(),
         });
 
         while let Some(Open { node, .. }) = open.pop() {
-            if node == start.0 {
+            if node == start {
                 // done
-                let mut traj = vec![Node(start.0)];
-                let mut n = start.0;
-                while n != end.0 {
+                let mut traj = vec![start];
+                let mut n = start;
+                while n != end {
                     n = parent[n];
-                    traj.push(Node(n));
+                    traj.push(n);
                 }
                 return Some(traj);
             }
@@ -251,7 +245,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
 }
 
 impl<C, NN, V> Graph for Prm<'_, C, NN, V> {
-    type Node = Node;
+    type Node = usize;
     type Configuration = C;
 
     fn configuration(&self, node: Self::Node) -> &Self::Configuration {
@@ -259,7 +253,7 @@ impl<C, NN, V> Graph for Prm<'_, C, NN, V> {
     }
 
     fn neighbors(&self, node: Self::Node) -> impl IntoIterator<Item = Self::Node> {
-        self.edges[node.0].iter().map(|&x| Node(x))
+        self.edges[node].iter().copied()
     }
 }
 
