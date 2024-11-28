@@ -45,7 +45,7 @@ pub struct Rrt<'a, C, NN, V> {
 
 /// Workaround module to avoid exposing implementation details of `Node` to consumers.
 mod private {
-    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd)]
     pub struct Node(pub usize);
 }
 use private::Node;

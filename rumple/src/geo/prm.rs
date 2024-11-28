@@ -250,7 +250,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
     }
 }
 
-impl<'a, C, NN, V> Graph for Prm<'a, C, NN, V> {
+impl<C, NN, V> Graph for Prm<'_, C, NN, V> {
     type Node = Node;
     type Configuration = C;
 

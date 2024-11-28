@@ -51,7 +51,10 @@ where
     /// This distance is the Euclidean distance.
     type Distance = T;
 
-    type Interpolation<'a> = VectorInterpolation<N, T> where T: 'a;
+    type Interpolation<'a>
+        = VectorInterpolation<N, T>
+    where
+        T: 'a;
 
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
         let dist = SquaredEuclidean.partial_distance(self, end);
@@ -75,7 +78,6 @@ where
     }
 }
 
-#[expect(clippy::module_name_repetitions)]
 pub struct VectorInterpolation<const N: usize, T> {
     pub(crate) n: usize,
     start: Vector<N, T>,
