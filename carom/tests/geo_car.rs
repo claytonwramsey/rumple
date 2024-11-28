@@ -1,9 +1,9 @@
 use carom::env::World2d;
 use num_traits::FloatConst;
-use rand::SeedableRng;
+use rand::{distributions::Bernoulli, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use rumple::{
-    geo::{rrt_connect, RrtConnect},
+    geo::Rrt,
     metric::{Euclidean, Metric, SquaredEuclidean},
     nn::KdTreeMap,
     sample::Rectangle,
@@ -49,7 +49,7 @@ fn geo_car() {
         env: World2d<f64>,
         half_w: f64,
         half_h: f64,
-    };
+    }
 
     impl Validate<Pose2d<f64>> for MyValid {
         fn is_valid_configuration(
@@ -59,7 +59,6 @@ fn geo_car() {
                 angle,
             }: &Pose2d<f64>,
         ) -> bool {
-            println!("{x}, {y}, {angle:?}");
             !self
                 .env
                 .collides_rect(x, y, angle.get(), self.half_w, self.half_h)
@@ -82,25 +81,26 @@ fn geo_car() {
         angle_dist: f64::PI() / 4.0,
         position_dist: 2.0,
     };
-    let mut rrt = RrtConnect::new(
+    let mut rrt = Rrt::new(
+        start,
         KdTreeMap::new(WeightedPoseDistance {
             position_metric: SquaredEuclidean,
             position_weight: 1.0,
             angle_metric: SquaredEuclidean,
             angle_weight: 1.0,
         }),
-        start,
-        goal,
         &valid,
     );
     let traj = rrt
-        .grow(
+        .grow_toward(
             &Rectangle {
                 min: Vector::new([-2.0; 2]),
                 max: Vector::new([11.0; 2]),
             },
+            &goal,
             grow_radius,
             &mut Solved::new(),
+            &Bernoulli::new(0.05).unwrap(),
             &mut ChaCha20Rng::seed_from_u64(2707),
         )
         .unwrap();
@@ -113,7 +113,9 @@ fn geo_car() {
         let x1 = a[0];
         let x2 = a[1];
 
+        dbg!(x1, x2, Euclidean.distance(&x1.position, &x2.position));
+        assert!(valid.is_valid_configuration(&x1));
         assert!(Euclidean.distance(&x1.position, &x2.position) <= pos_interp + 1e-5);
-        assert!(Euclidean.distance(&x1.angle, &x2.angle) <= pos_interp + 1e-5);
+        assert!(Euclidean.distance(&x1.angle, &x2.angle) <= ang_interp + 1e-5);
     }
 }

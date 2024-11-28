@@ -7,6 +7,7 @@ use crate::{
 };
 use alloc::vec::Vec;
 
+#[derive(Clone, Debug)]
 /// A rapidly-exploring random tree: a geometric single-query sampling-based motion planner.
 ///
 /// This is a simple implementation; you may want to alternately use [`RrtConnect`].
@@ -44,6 +45,7 @@ pub struct Rrt<'a, C, NN, V> {
 
 /// Workaround module to avoid exposing implementation details of `Node` to consumers.
 mod private {
+    #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
     pub struct Node(pub usize);
 }
 use private::Node;

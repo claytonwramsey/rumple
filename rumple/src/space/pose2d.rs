@@ -1,4 +1,4 @@
-use core::array;
+use core::{cmp::Ordering, fmt::Debug};
 
 use num_traits::{float::Float, FloatConst, NumCast};
 
@@ -73,54 +73,46 @@ where
 
 impl<T> Interpolate for Pose2d<T>
 where
-    T: Float + FloatConst,
+    T: Float + FloatConst + Debug,
 {
     type Distance = PoseRadius<T>;
-    type Interpolation<'a> = Pose2dInterpolation<T> where T: 'a;
+    type Interpolation<'a>
+        = Pose2dInterpolation<T>
+    where
+        T: 'a;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
+        dbg!(self, end, radius);
         let pos_dist = Euclidean.distance(&self.position, &end.position);
+        dbg!(pos_dist);
         let ang_dist = self.angle.signed_distance(end.angle);
         let ang_n = <usize as NumCast>::from((ang_dist.abs() / radius.angle_dist).floor()).unwrap();
         let pos_n = <usize as NumCast>::from((pos_dist / radius.position_dist).floor()).unwrap();
-        let n_min = ang_n.min(pos_n);
-        if n_min == 0 {
-            println!("zero-step");
-            return Pose2dInterpolation {
-                n: 0,
-                start: *self,
-                step: *self,
-            };
-        }
-        let pos_scl = radius.position_dist / pos_dist;
-        let mut pos_step = array::from_fn(|i| pos_scl * (end.position[i] - self.position[i]));
-        let mut ang_step = (ang_dist.signum() * radius.angle_dist).rem(T::TAU());
-        assert!(
-            Euclidean.distance(&Vector(pos_step), &Vector([T::zero(); 2]))
-                <= radius.position_dist
-                    + (-(T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()))
-                    .exp2()
-        );
-
-        let n = if ang_n < pos_n {
-            ang_step = ang_step * T::from(ang_n).unwrap() / T::from(pos_n).unwrap();
-            pos_n
-        } else {
-            let scl = T::from(pos_n).unwrap() / T::from(ang_n).unwrap();
-            pos_step = pos_step.map(|x| x * scl);
-            ang_n
+        dbg!(ang_n, pos_n);
+        let n = match ang_n.cmp(&pos_n) {
+            Ordering::Less => pos_n,
+            Ordering::Greater => ang_n,
+            Ordering::Equal => {
+                return Pose2dInterpolation {
+                    n: 0,
+                    step: *self,
+                    start: *self,
+                }
+            }
         };
-        if ang_step.is_sign_negative() {
+        // fencepost problem - `n_gaps` is the number of empty spaces between samples and the
+        // borders
+        let n_gaps = <T as NumCast>::from(n + 1).unwrap();
+        let mut ang_step = ang_dist / n_gaps;
+        if ang_step.is_sign_negative() && !ang_step.is_zero() {
             ang_step = ang_step + T::TAU();
         }
-        assert!(ang_step.is_sign_positive() && ang_step < T::TAU());
-        println!("n={n}");
+        assert!(ang_step.is_zero() || ang_step.is_sign_positive());
+        assert!(ang_step < T::TAU());
+        let pos_step = [
+            (end.position[0] - self.position[0]) / n_gaps,
+            (end.position[1] - self.position[1]) / n_gaps,
+        ];
+        dbg!(pos_step);
 
         let step = Self {
             position: Vector(pos_step),
@@ -130,6 +122,14 @@ where
             Euclidean.distance(&step.position, &Vector([T::zero(); 2]))
                 <= radius.position_dist
                     + (-(T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
+                        + T::one()
                         + T::one()
                         + T::one()
                         + T::one()
@@ -147,14 +147,13 @@ where
     }
 }
 
-#[expect(clippy::module_name_repetitions)]
 pub struct Pose2dInterpolation<T> {
     n: usize,
     start: Pose2d<T>,
     step: Pose2d<T>,
 }
 
-impl<T: Float + FloatConst> Iterator for Pose2dInterpolation<T> {
+impl<T: Float + FloatConst + Debug> Iterator for Pose2dInterpolation<T> {
     type Item = Pose2d<T>;
     fn next(&mut self) -> Option<Self::Item> {
         (self.n > 0).then(|| {

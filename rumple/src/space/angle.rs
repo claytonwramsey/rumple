@@ -17,7 +17,7 @@ pub struct Angle<T = f64>(T);
 impl<T> Angle<T> {
     /// # Panics
     ///
-    /// This function will panic if `T` is not between -pi and pi.
+    /// This function will panic if `T` is not between 0 and 2 pi.
     pub fn new(value: T) -> Self
     where
         T: num_traits::FloatConst + Float,
@@ -109,8 +109,12 @@ impl<T: FloatConst + Float> std::ops::Add for Angle<T> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
+        debug_assert!(self.0.is_sign_positive() || self.0.is_zero());
+        debug_assert!(self.0 <= T::TAU());
+        debug_assert!(rhs.0.is_sign_positive() || rhs.0.is_zero());
+        debug_assert!(rhs.0 <= T::TAU());
         let r = self.0 + rhs.0;
-        Self(if r > T::TAU() { r - T::TAU() } else { r })
+        Self(if r >= T::TAU() { r - T::TAU() } else { r })
     }
 }
 
@@ -118,7 +122,10 @@ impl<T> Interpolate for Angle<T>
 where
     T: Float + FloatConst,
 {
-    type Interpolation<'a> = AngleInterpolation<T> where Self: 'a;
+    type Interpolation<'a>
+        = AngleInterpolation<T>
+    where
+        Self: 'a;
     type Distance = T;
     fn interpolate(&self, &end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
         #[expect(clippy::neg_cmp_op_on_partial_ord)]
@@ -141,7 +148,6 @@ where
     }
 }
 
-#[expect(clippy::module_name_repetitions)]
 pub struct AngleInterpolation<T> {
     start: Angle<T>,
     pub(crate) step: Angle<T>,
