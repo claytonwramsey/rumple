@@ -115,7 +115,7 @@ fn geo_car() {
 
         dbg!(x1, x2, Euclidean.distance(&x1.position, &x2.position));
         assert!(valid.is_valid_configuration(&x1));
-        assert!(Euclidean.distance(&x1.position, &x2.position) <= pos_interp + 1e-5);
-        assert!(Euclidean.distance(&x1.angle, &x2.angle) <= ang_interp + 1e-5);
+        assert!(Euclidean.distance(&x1.position, &x2.position) <= grow_radius.position_dist + 1e-5);
+        assert!(Euclidean.distance(&x1.angle, &x2.angle) <= grow_radius.angle_dist + 1e-5);
     }
 }

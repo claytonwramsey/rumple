@@ -89,7 +89,8 @@ where
     fn distance(&self, c1: &Vector<N, T>, c2: &Vector<N, T>) -> Self::Distance {
         let mut total = T::zero();
         for (&a, &b) in c1.iter().zip(c2.iter()) {
-            total = total + (a - b) * (a - b);
+            let diff = a - b;
+            total = total + diff * diff;
         }
         total.sqrt()
     }

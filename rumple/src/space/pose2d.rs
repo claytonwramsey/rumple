@@ -90,8 +90,8 @@ where
         dbg!(ang_n, pos_n);
         let n = match ang_n.cmp(&pos_n) {
             Ordering::Less => pos_n,
-            Ordering::Greater => ang_n,
-            Ordering::Equal => {
+            Ordering::Greater | Ordering::Equal if ang_n != 0 => ang_n,
+            _ => {
                 return Pose2dInterpolation {
                     n: 0,
                     step: *self,
@@ -147,6 +147,7 @@ where
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Pose2dInterpolation<T> {
     n: usize,
     start: Pose2d<T>,
@@ -215,5 +216,47 @@ where
             position: Vector::upper_bound(),
             angle: Angle::upper_bound(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core::f64::consts::FRAC_PI_2;
+
+    use super::*;
+
+    #[test]
+    #[expect(clippy::unreadable_literal)]
+    fn interp() {
+        let x1 = Pose2d {
+            position: Vector([4.19049121592329, 2.9071816974125753]),
+            angle: Angle::new(0.7566420685098816),
+        };
+        let x2 = Pose2d {
+            position: Vector([7.0, 3.0]),
+            angle: Angle::new(FRAC_PI_2),
+        };
+        let grow_radius = PoseRadius {
+            angle_dist: f64::PI() / 4.0,
+            position_dist: 2.0,
+        };
+
+        let interp = x1.interpolate(&x2, grow_radius);
+        dbg!(&interp);
+        let mut prev = x1;
+        for new in interp {
+            dbg!(prev, new);
+            assert!(
+                Euclidean.distance(&prev.position, &new.position)
+                    <= grow_radius.position_dist + 1e-5
+            );
+            assert!(Euclidean.distance(&prev.angle, &new.angle) <= grow_radius.angle_dist + 1e-5);
+            prev = new;
+        }
+
+        assert!(
+            Euclidean.distance(&prev.position, &x2.position) <= grow_radius.position_dist + 1e-5
+        );
+        assert!(Euclidean.distance(&prev.angle, &x2.angle) <= grow_radius.angle_dist + 1e-5);
     }
 }
