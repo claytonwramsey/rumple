@@ -135,11 +135,6 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
         let mut res = None;
 
         'a: while !timeout.is_over() {
-            println!(
-                "forward size {}, reverse size {}",
-                self.trees[0].configurations.len(),
-                self.trees[1].configurations.len()
-            );
             // begin with RRTC extend procedure
             timeout.update_sample_count(1);
             let q_rand = space_sampler.sample(rng);

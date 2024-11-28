@@ -81,13 +81,10 @@ where
     where
         T: 'a;
     fn interpolate(&self, end: &Self, radius: Self::Distance) -> Self::Interpolation<'_> {
-        dbg!(self, end, radius);
         let pos_dist = Euclidean.distance(&self.position, &end.position);
-        dbg!(pos_dist);
         let ang_dist = self.angle.signed_distance(end.angle);
         let ang_n = <usize as NumCast>::from((ang_dist.abs() / radius.angle_dist).floor()).unwrap();
         let pos_n = <usize as NumCast>::from((pos_dist / radius.position_dist).floor()).unwrap();
-        dbg!(ang_n, pos_n);
         let n = match ang_n.cmp(&pos_n) {
             Ordering::Less => pos_n,
             Ordering::Greater | Ordering::Equal if ang_n != 0 => ang_n,
@@ -112,33 +109,11 @@ where
             (end.position[0] - self.position[0]) / n_gaps,
             (end.position[1] - self.position[1]) / n_gaps,
         ];
-        dbg!(pos_step);
 
         let step = Self {
             position: Vector(pos_step),
             angle: Angle::new(ang_step),
         };
-        assert!(
-            Euclidean.distance(&step.position, &Vector([T::zero(); 2]))
-                <= radius.position_dist
-                    + (-(T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()
-                        + T::one()))
-                    .exp2()
-        );
         Pose2dInterpolation {
             n,
             start: *self,
