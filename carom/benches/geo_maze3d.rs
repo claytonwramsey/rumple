@@ -102,7 +102,7 @@ fn main() {
         rrt_connect(
             black_box(start),
             black_box(goal),
-            rumple::nn::KiddoMap::<_, 3, _, SquaredEuclidean>::new(),
+            rumple::nn::KiddoMap::<_, 3, SquaredEuclidean>::new(),
             &valid,
             &sampler,
             rrt_radius,
@@ -153,7 +153,7 @@ fn main() {
         rrt_connect(
             black_box(start),
             black_box(goal),
-            rumple::nn::KiddoMap::<_, 3, _, SquaredEuclidean>::new(),
+            rumple::nn::KiddoMap::<_, 3, SquaredEuclidean>::new(),
             &rake_valid,
             &sampler,
             rrt_radius,
@@ -197,7 +197,7 @@ fn prm_bench_kiddo<V: GeoValidate<Vector<3, F>>, S, R>(
 where
     S: Sample<Vector<3, F>, R>,
 {
-    let mut prm = Prm::new(KiddoMap::<_, 3, _, SquaredEuclidean>::new(), valid);
+    let mut prm = Prm::new(KiddoMap::<_, 3, SquaredEuclidean>::new(), valid);
     let s = prm.insert_r(start, 0.0).unwrap();
     let g = prm.insert_r(goal, 0.0).unwrap();
     prm.grow_r_solve(1.0, &mut Solved::new(), sampler, rng, s, g);

@@ -3,7 +3,11 @@
 use alloc::vec::Vec;
 
 use crate::{
-    nn::NearestNeighborsMap, sample::Sample, space::Interpolate, time::Timeout, valid::GeoValidate,
+    nn::{NearestEntry, NearestNeighborsMap},
+    sample::Sample,
+    space::Interpolate,
+    time::Timeout,
+    valid::GeoValidate,
 };
 
 #[derive(Clone, Debug)]
@@ -133,7 +137,8 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
             timeout.update_sample_count(1);
             let q_rand = space_sampler.sample(rng);
             let t = &mut self.trees[self.next as usize];
-            let (q_near, &q_near_id) = t.nn.nearest(&q_rand).expect("NN must be nonempty");
+            let &q_near_id = t.nn.nearest(&q_rand).expect("NN must be nonempty").value();
+            let q_near = &t.configurations[q_near_id];
             let q_new = q_near
                 .interpolate(&q_rand, radius.clone())
                 .next()
@@ -154,9 +159,9 @@ impl<'a, C, NN, V> RrtConnect<'a, C, NN, V> {
 
             // attempt to connect the two trees with this newly created node
             let tb = &mut self.trees[self.next as usize];
-            let (q_old_connect_r, &id) = tb.nn.nearest(&q_new).expect("NN must be nonempty");
+            let &id = tb.nn.nearest(&q_new).expect("NN must be nonempty").value();
             let mut q_old_connect_id = id;
-            let mut q_old_connect = q_old_connect_r.clone();
+            let mut q_old_connect = tb.configurations[id].clone();
 
             for q_new_connect in q_old_connect.clone().interpolate(&q_new, radius.clone()) {
                 if !self.valid.is_valid_configuration(&q_new_connect)

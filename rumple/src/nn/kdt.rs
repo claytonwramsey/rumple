@@ -7,6 +7,8 @@ use crate::{
     nn::{NearestNeighborsMap, RangeNearestNeighborsMap},
 };
 
+use super::BorrowedEntry;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// A nearest-neighbor map backed by a _k_-d tree.
 ///
@@ -65,6 +67,13 @@ where
     M: DistanceAabb<K>,
     K: KdKey,
 {
+    type Entry<'a>
+        = BorrowedEntry<'a, K, V>
+    where
+        Self: 'a,
+        K: 'a,
+        V: 'a;
+
     fn insert(&mut self, key: K, value: V) {
         let new_node_id = self.nodes.len();
 
@@ -97,25 +106,34 @@ where
         self.values.push(value);
     }
 
-    fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)> {
+    fn nearest<'q>(&'q self, key: &K) -> Option<Self::Entry<'q>> {
         let root = self.nodes.first()?;
         let mut radius = self.metric.distance(&root.key, key);
         if radius.is_zero() {
-            return Some((&root.key, &self.values[0]));
+            return Some(BorrowedEntry {
+                key: &root.key,
+                value: &self.values[0],
+            });
         }
         let best_node = self
             .nearest_help(0, key, K::lower_bound(), K::upper_bound(), &mut radius, 0)
             .map_or(0, NonZeroUsize::get);
-        Some((&self.nodes[best_node].key, &self.values[best_node]))
+        Some(BorrowedEntry {
+            key: &self.nodes[best_node].key,
+            value: &self.values[best_node],
+        })
     }
 }
 
 // TODO make this a resuming iterator
 /// An iterator over all points with a given radius of a query point in a [`KdTreeMap`].
-pub struct RangeNearest<'a, K, V, M>(Vec<(&'a K, &'a V)>, PhantomData<&'a KdTreeMap<K, V, M>>);
+pub struct RangeNearest<'a, K, V, M>(
+    Vec<BorrowedEntry<'a, K, V>>,
+    PhantomData<&'a KdTreeMap<K, V, M>>,
+);
 
 impl<'a, K, V, M> Iterator for RangeNearest<'a, K, V, M> {
-    type Item = (&'a K, &'a V);
+    type Item = BorrowedEntry<'a, K, V>;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
     }
@@ -232,7 +250,7 @@ where
     fn nearest_r_help<'q>(
         &'q self,
         point: &K,
-        buf: &mut Vec<(&'q K, &'q V)>,
+        buf: &mut Vec<BorrowedEntry<'q, K, V>>,
         radius: &<M as Metric<K>>::Distance,
         node_id: usize,
         mut reg_lo: K,
@@ -241,7 +259,10 @@ where
     ) {
         let node = &self.nodes[node_id];
         if &self.metric.distance(point, &node.key) <= radius {
-            buf.push((&node.key, &self.values[node_id]));
+            buf.push(BorrowedEntry {
+                key: &node.key,
+                value: &self.values[node_id],
+            });
         }
 
         let is_left = point.compare(&node.key, k).is_lt();
@@ -309,12 +330,18 @@ mod tests {
     where
         M: Metric<K>,
     {
+        type Entry<'q>
+            = BorrowedEntry<'q, K, V>
+        where
+            Self: 'q,
+            K: 'q,
+            V: 'q;
         fn insert(&mut self, key: K, value: V) {
             self.poses.push(key);
             self.values.push(value);
         }
 
-        fn nearest<'q>(&'q self, key: &K) -> Option<(&'q K, &'q V)> {
+        fn nearest<'q>(&'q self, key: &K) -> Option<BorrowedEntry<'q, K, V>> {
             let mut best_i = 0;
             let mut best_dist = self.metric.distance(self.poses.first()?, key);
             for (i, pose) in self.poses.iter().enumerate() {
@@ -325,7 +352,10 @@ mod tests {
                 }
             }
 
-            Some((&self.poses[best_i], &self.values[best_i]))
+            Some(BorrowedEntry {
+                key: &self.poses[best_i],
+                value: &self.values[best_i],
+            })
         }
     }
 
@@ -356,7 +386,10 @@ mod tests {
         let t = build_tree(&[[1.0, 1.0]]);
         assert_eq!(
             t.nearest(&Vector::new([0.0, 0.0])),
-            Some((&Vector::new([1.0, 1.0]), &()))
+            Some(BorrowedEntry {
+                key: &Vector::new([1.0, 1.0]),
+                value: &()
+            })
         );
     }
 
@@ -366,7 +399,10 @@ mod tests {
         // println!("{t:?}");
         assert_eq!(
             t.nearest(&Vector::new([0.0, 0.0])),
-            Some((&Vector::new([-0.5, 0.5]), &()))
+            Some(BorrowedEntry {
+                key: &Vector::new([-0.5, 0.5]),
+                value: &()
+            })
         );
     }
 
@@ -435,8 +471,8 @@ mod tests {
             kdt.insert(pt, ());
             let q = region.sample(&mut rng);
             // println!("{kdt:#?}");
-            let bf_nearest = bf.nearest(&q).unwrap().0;
-            let kdt_nearest = kdt.nearest(&q).unwrap().0;
+            let bf_nearest = bf.nearest(&q).unwrap().key;
+            let kdt_nearest = kdt.nearest(&q).unwrap().key;
 
             assert_eq!(bf_nearest, kdt_nearest);
             let mut bf_rn: Vec<&Pose2d<f32>> = bf
@@ -445,7 +481,7 @@ mod tests {
                 .filter(|p| m.distance(p, &q) <= 2.0)
                 .collect();
             let mut kdt_rn: Vec<&Pose2d<f32>> =
-                kdt.nearest_within_r(&q, 2.0).map(|(k, ())| k).collect();
+                kdt.nearest_within_r(&q, 2.0).map(|e| e.key).collect();
             bf_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
             kdt_rn.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 

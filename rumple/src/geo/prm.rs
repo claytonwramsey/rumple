@@ -5,7 +5,11 @@ use alloc::vec::Vec;
 use num_traits::Zero;
 
 use crate::{
-    metric::Metric, nn::RangeNearestNeighborsMap, sample::Sample, time::Timeout, valid::GeoValidate,
+    metric::Metric,
+    nn::{NearestEntry, RangeNearestNeighborsMap},
+    sample::Sample,
+    time::Timeout,
+    valid::GeoValidate,
 };
 
 /// Probabilistic roadmaps; a class of anytime geometric motion planner.
@@ -137,11 +141,11 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
         let i = self.edges.len();
         self.edges.push(Vec::new());
         let new_component = self.components.create();
-        for n in self
-            .nn
-            .nearest_within_r(&c, radius)
-            .filter_map(|(q, &n)| self.valid.is_valid_transition(&c, q).then_some(n))
-        {
+        for n in self.nn.nearest_within_r(&c, radius).filter_map(|e| {
+            self.valid
+                .is_valid_transition(&c, &self.configurations[*e.value()])
+                .then_some(*e.value())
+        }) {
             self.components.unify(new_component, n);
             // assume bidirectionality
             self.edges[i].push(n);

@@ -1,5 +1,5 @@
 use crate::{
-    nn::NearestNeighborsMap,
+    nn::{NearestEntry, NearestNeighborsMap},
     sample::Sample,
     space::Interpolate,
     time::Timeout,
@@ -140,10 +140,12 @@ impl<'a, C, NN, V> Rrt<'a, C, NN, V> {
             } else {
                 space_sampler.sample(rng)
             };
-            let (start_cfg, &start_id) = self
+            let &start_id = self
                 .nn
                 .nearest(&target)
-                .expect("NN must always have elements");
+                .expect("NN must always have elements")
+                .value();
+            let start_cfg = &self.configurations[start_id];
             let (reached, end_cfg) = start_cfg
                 .interpolate(&target, radius.clone())
                 .next()
