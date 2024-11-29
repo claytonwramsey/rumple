@@ -152,6 +152,7 @@ mod tests {
         let dist = 0.05;
         let z_expected = Vector::new([0.05]);
         let z = x.interpolate(&y, dist).next().unwrap();
+        #[cfg(feature = "std")]
         println!("{z:?}");
         assert!((z - z_expected)[0].abs() <= 0.001);
     }

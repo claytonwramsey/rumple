@@ -105,10 +105,10 @@ impl<T> AsRef<T> for Angle<T> {
     }
 }
 
-impl<T: FloatConst + Float> std::ops::Add for Angle<T> {
+impl<T: FloatConst + Float> core::ops::Add for Angle<T> {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Self::Output {
+    fn add(self, rhs: Self) -> Self {
         debug_assert!(self.0.is_sign_positive() || self.0.is_zero());
         debug_assert!(self.0 <= T::TAU());
         debug_assert!(rhs.0.is_sign_positive() || rhs.0.is_zero());

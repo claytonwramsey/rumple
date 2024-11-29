@@ -217,10 +217,8 @@ mod tests {
         };
 
         let interp = x1.interpolate(&x2, grow_radius);
-        dbg!(&interp);
         let mut prev = x1;
         for new in interp {
-            dbg!(prev, new);
             assert!(
                 Euclidean.distance(&prev.position, &new.position)
                     <= grow_radius.position_dist + 1e-5
