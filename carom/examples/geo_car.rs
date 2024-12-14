@@ -83,9 +83,6 @@ fn main() {
         )
         .unwrap();
 
-    #[cfg(feature = "std")]
-    {
-        println!("Created {} nodes", rrtc.num_nodes());
-        println!("{_traj:?}");
-    }
+    println!("Created {} nodes", rrtc.num_nodes());
+    println!("{_traj:?}");
 }

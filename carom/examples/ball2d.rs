@@ -46,11 +46,9 @@ fn main() {
         )
         .unwrap();
 
-    #[cfg(feature = "std")]
-    {
-        println!("Created {} nodes", rrt.num_nodes());
-        println!("{traj:?}");
-    }
+    println!("Created {} nodes", rrt.num_nodes());
+    println!("{traj:?}");
+
     assert!(
         traj.windows(2)
             .all(|a| SquaredEuclidean.distance(&a[0], &a[1]) <= grow_radius + 1e-5),

@@ -243,7 +243,6 @@ where
 mod tests {
 
     #[test]
-    #[cfg(feature = "std")]
     fn aabb_rect() {
         use super::World2d;
         use core::f64::consts::PI;
