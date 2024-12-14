@@ -1,4 +1,5 @@
 #![feature(portable_simd)]
+#![warn(clippy::pedantic, clippy::nursery)]
 
 use core::{
     array,
@@ -38,7 +39,7 @@ where
 
 impl<F, const L: usize> SimdArithmetic<F, L> for Simd<F, L>
 where
-    Simd<F, L>: Add<Output = Self>
+    Self: Add<Output = Self>
         + Sub<Output = Self>
         + Mul<Output = Self>
         + Div<Output = Self>
@@ -91,6 +92,7 @@ where
         Simd<F, L>: SimdArithmetic<F, L>;
 }
 
+#[expect(clippy::missing_panics_doc)]
 /// Determine whether the transition from `start` to `end` is valid by sampling points spaced
 /// `resolution` apart with `L` lanes of SIMD parallelism.
 /// Assumes the distance between the points is `distance`.
@@ -102,7 +104,7 @@ pub fn is_valid_transition<R: Robot<N, F>, const N: usize, const L: usize, F>(
     world: &R::World,
 ) -> bool
 where
-    F: SimdElement + Float + Float + core::fmt::Debug,
+    F: SimdElement + Float,
     LaneCount<L>: SupportedLaneCount,
     Simd<F, L>: SimdArithmetic<F, L>,
 {
@@ -156,7 +158,7 @@ where
 impl<R, W, const N: usize, const L: usize, F> GeoValidate<Vector<N, F>> for Rake<R, W, L>
 where
     R: Robot<N, F, World = W>,
-    F: SimdElement + Float + Float + core::fmt::Debug,
+    F: SimdElement + Float,
     LaneCount<L>: SupportedLaneCount,
     Simd<F, L>: SimdArithmetic<F, L>,
     Simd<F, 1>: SimdArithmetic<F, 1>,

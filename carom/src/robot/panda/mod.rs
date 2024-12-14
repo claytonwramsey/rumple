@@ -1,32 +1,39 @@
 use core::simd::Simd;
 
+use crate::{env::World3d, Robot};
 use fkcc::interleaved_sphere_fk;
-use rumple::{
-    space::Vector,
-    valid::{GeoValidate, Validate},
-};
-
-use crate::env::World3d;
+use rumple::space::Vector;
 
 mod fkcc;
 
-pub struct PandaCc<'a> {
-    environment: &'a World3d<f32>,
+pub struct Panda;
+
+impl Panda {
+    #[expect(clippy::approx_constant)]
+    pub const BOUNDS: [Vector<DIM, f32>; 2] = [
+        Vector([
+            -2.9671, -1.8326, -2.9671, -3.1416, -2.9671, -0.0873, -2.9671,
+        ]),
+        Vector([2.9671, 1.8326, 2.9671, 0.0873, 2.9671, 0.0873, 2.9671]),
+    ];
 }
 
-pub const DIM: usize = 7;
+const DIM: usize = 7;
 
-pub type Configuration = Vector<DIM, f32>;
-pub type ConfigurationBlock<const L: usize> = [Simd<f32, L>; DIM];
+type ConfigurationBlock<const L: usize> = [Simd<f32, L>; DIM];
 
-impl Validate<Configuration> for PandaCc<'_> {
-    fn is_valid_configuration(&self, c: &Configuration) -> bool {
-        interleaved_sphere_fk(&c.0.map(Simd::<f32, 1>::splat), &self.environment)
+impl Robot<7, f32> for Panda {
+    type World = World3d<f32>;
+    fn is_valid<const L: usize>(&self, cfgs: &crate::Block<7, L, f32>, world: &Self::World) -> bool
+    where
+        std::simd::LaneCount<L>: std::simd::SupportedLaneCount,
+        f32: std::simd::SimdElement + num_traits::Float,
+        Simd<f32, L>: crate::SimdArithmetic<f32, L>,
+    {
+        interleaved_sphere_fk(&cfgs.0, world)
     }
-}
 
-impl GeoValidate<Configuration> for PandaCc<'_> {
-    fn is_valid_transition(&self, _: &Configuration, _: &Configuration) -> bool {
-        todo!()
+    fn resolution(&self) -> f32 {
+        0.1
     }
 }

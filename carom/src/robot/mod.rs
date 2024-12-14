@@ -7,6 +7,9 @@ pub use sphere::Sphere;
 
 use crate::env::World3d;
 
+pub use panda::Panda;
+
+#[expect(clippy::many_single_char_names)]
 fn sphere_environment_in_collision<const L: usize>(
     e: &World3d<f32>,
     x: Simd<f32, L>,
@@ -20,6 +23,7 @@ where
     e.collides_balls(x, y, z, r)
 }
 
+#[expect(clippy::too_many_arguments)]
 fn sphere_sphere_self_collision<const L: usize>(
     x1: Simd<f32, L>,
     y1: Simd<f32, L>,

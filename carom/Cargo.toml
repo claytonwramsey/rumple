@@ -20,6 +20,10 @@ harness = false
 name = "geo_maze3d"
 harness = false
 
+[[bench]]
+name = "panda_sphere_cage"
+harness = false
+
 [[example]]
 name = "ball2d"
 test = true

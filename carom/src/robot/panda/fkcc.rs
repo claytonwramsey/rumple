@@ -7,7 +7,13 @@ use crate::{
     robot::{sphere_environment_in_collision, sphere_sphere_self_collision},
 };
 
-#[expect(non_snake_case)]
+#[expect(
+    non_snake_case,
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    clippy::unreadable_literal,
+    clippy::approx_constant
+)]
 pub fn interleaved_sphere_fk<const L: usize>(
     q: &super::ConfigurationBlock<L>,
     environment: &World3d<f32>,
