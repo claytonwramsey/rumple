@@ -10,6 +10,7 @@ use rumple::{
     sample::Rectangle,
     space::Vector,
     time::{LimitNodes, LimitSamples, Solved},
+    valid::GeoValidate,
 };
 
 use carom::{env::World3d, robot::Panda, Rake};
@@ -37,6 +38,7 @@ fn main() {
         [0.0, -0.55, 0.8],
         [0.35, -0.35, 0.8],
     ];
+    // let sphere_centers: [[f32; 3]; 0] = [];
 
     let r = 0.2;
 
@@ -81,4 +83,10 @@ fn main() {
     );
 
     println!("plan_panda: traj is {:?}", traj);
+
+    for w in traj.windows(2) {
+        let [q1, q2] = *w else { unreachable!() };
+        println!("{q1:?} -> {q2:?}");
+        assert!(rake.is_valid_transition(&q1, &q2));
+    }
 }

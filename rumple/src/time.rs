@@ -125,6 +125,14 @@ macro_rules! any_tuple {
                     $args.update_node_count(n);
                 )*
             }
+
+            fn notify_solved(&mut self) {
+                #[allow(non_snake_case)]
+                let &mut ($(ref mut $args,)*) = &mut self.0;
+                $(
+                    $args.notify_solved();
+                )*
+            }
         }
     }
 }

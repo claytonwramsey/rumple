@@ -31,3 +31,6 @@ test = true
 [[example]]
 name = "geo_car"
 test = true
+
+[[example]]
+name = "plan_panda"
