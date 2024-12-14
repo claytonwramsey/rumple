@@ -34,6 +34,6 @@ impl Robot<7, f32> for Panda {
     }
 
     fn resolution(&self) -> f32 {
-        0.1
+        1.0 / 24.0
     }
 }

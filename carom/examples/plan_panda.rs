@@ -1,5 +1,7 @@
 #![feature(portable_simd)]
 
+use std::time::Instant;
+
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
 use rumple::{
@@ -7,14 +9,14 @@ use rumple::{
     nn::KiddoMap,
     sample::Rectangle,
     space::Vector,
-    time::{LimitSamples, Solved},
+    time::{LimitNodes, LimitSamples, Solved},
 };
 
-use brunch::{Bench, Benches};
 use carom::{env::World3d, robot::Panda, Rake};
 
 const L: usize = 8;
 
+#[cfg_attr(test, test)]
 fn main() {
     let q_start = Vector([0., -0.785, 0., -2.356, 0., 1.571, 0.785]);
     let q_end = Vector([2.35, 1., 0., -0.8, 0.0, 2.5, 0.785]);
@@ -47,22 +49,36 @@ fn main() {
         robot: Panda,
         world,
     };
+    let tic = Instant::now();
 
-    let mut benches = Benches::default();
-    benches.push(Bench::new("panda_sphere_cage").run(|| {
-        rrt_connect(
-            q_start,
-            q_end,
-            KiddoMap::new(),
-            &rake,
-            &Rectangle {
-                min: Panda::BOUNDS[0],
-                max: Panda::BOUNDS[1],
-            },
-            2.0,
-            &mut (Solved::new() | LimitSamples::new(1_000_000)),
-            &mut ChaCha20Rng::seed_from_u64(2707),
-        )
-    }));
-    benches.finish();
+    let mut sample_limit = LimitSamples::new(1_000_000);
+    let mut node_limit = LimitNodes::new(1_000_000);
+    let traj = rrt_connect(
+        q_start,
+        q_end,
+        KiddoMap::new(),
+        &rake,
+        &Rectangle {
+            min: Panda::BOUNDS[0],
+            max: Panda::BOUNDS[1],
+        },
+        2.0,
+        &mut (Solved::new() | &mut sample_limit | &mut node_limit),
+        &mut ChaCha20Rng::seed_from_u64(2707),
+    )
+    .unwrap();
+    let elapsed = Instant::now().duration_since(tic);
+    let nsamples = sample_limit.n_sampled();
+    let nnodes = node_limit.n_nodes();
+
+    println!(
+        "Finished planning in {:?} with {} samples and {} nodes ({} samples/sec, {} nodes/sec)",
+        elapsed,
+        nsamples,
+        nnodes,
+        nsamples as f64 / elapsed.as_secs_f64(),
+        nnodes as f64 / elapsed.as_secs_f64(),
+    );
+
+    println!("plan_panda: traj is {:?}", traj);
 }

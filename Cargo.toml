@@ -5,7 +5,6 @@ members = ["rumple", "carom"]
 [profile.bench]
 debug = true
 lto = false
-codegen-units = 1
 
 [profile.test]
 codegen-units = 32

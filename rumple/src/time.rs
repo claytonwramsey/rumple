@@ -40,11 +40,38 @@ pub trait Timeout {
 /// ```
 pub struct Any<T>(pub T);
 
+impl<T, R> BitOr<R> for Any<T> {
+    type Output = Any<(Self, R)>;
+    fn bitor(self, rhs: R) -> Self::Output {
+        Any((self, rhs))
+    }
+}
+
+impl<T: Timeout> Timeout for &mut T {
+    fn is_over(&self) -> bool {
+        (**self).is_over()
+    }
+
+    fn notify_solved(&mut self) {
+        (**self).notify_solved();
+    }
+
+    fn update_node_count(&mut self, n: usize) {
+        (**self).update_node_count(n);
+    }
+
+    fn update_sample_count(&mut self, n: usize) {
+        (**self).update_sample_count(n);
+    }
+}
+
 /// A timeout condition that enables a planner to run forever.
 pub struct Forever;
 
 /// A timeout condition that terminates as soon as a problem has been solved.
 pub struct Solved(bool);
+
+use core::ops::BitOr;
 
 #[cfg(feature = "std")]
 pub use alarm::Alarm;
@@ -193,6 +220,11 @@ impl LimitNodes {
             limit: n,
         }
     }
+
+    #[must_use]
+    pub const fn n_nodes(&self) -> usize {
+        self.current
+    }
 }
 
 impl LimitSamples {
@@ -203,6 +235,11 @@ impl LimitSamples {
             current: 0,
             limit: n,
         }
+    }
+
+    #[must_use]
+    pub const fn n_sampled(&self) -> usize {
+        self.current
     }
 }
 
