@@ -230,8 +230,7 @@ impl<'a, C, NN, V> Prm<'a, C, NN, V> {
                         .clone()
                         .expect("nodes in open set must have extant g-score");
                 if g_score[neighbor]
-                    .as_ref()
-                    .map_or(true, |d| &new_g_score < d)
+                    .as_ref().is_none_or(|d| &new_g_score < d)
                 {
                     // found a shorter path to neighbor
                     parent[neighbor] = node;
