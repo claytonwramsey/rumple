@@ -47,6 +47,13 @@ fn main() {
         world.add_ball(x, y, z, r);
     }
 
+    assert!(world.collides_ball(
+        sphere_centers[0][0],
+        sphere_centers[0][1],
+        sphere_centers[0][2] + 1.5 * r,
+        r
+    ));
+
     let rake: Rake<Panda, World3d<f32>, L> = Rake {
         robot: Panda,
         world,

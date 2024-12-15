@@ -51,6 +51,7 @@ where
 {
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Block<const N: usize, const L: usize, F>(pub [Simd<F, L>; N])
 where
     F: SimdElement,
@@ -92,11 +93,10 @@ where
         Simd<F, L>: SimdArithmetic<F, L>;
 }
 
-#[expect(clippy::missing_panics_doc)]
 /// Determine whether the transition from `start` to `end` is valid by sampling points spaced
 /// `resolution` apart with `L` lanes of SIMD parallelism.
 /// Assumes the distance between the points is `distance`.
-pub fn is_valid_transition<R: Robot<N, F>, const N: usize, const L: usize, F>(
+fn is_valid_transition<R: Robot<N, F>, const N: usize, const L: usize, F>(
     robot: &R,
     start: &Vector<N, F>,
     end: &Vector<N, F>,
