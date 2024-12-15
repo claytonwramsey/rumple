@@ -143,10 +143,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
+    #[cfg(feature = "std")]
     fn interpolate_real() {
+        use super::*;
         let x = Vector::new([0.0]);
         let y = Vector::new([1.0]);
         let dist = 0.05;
