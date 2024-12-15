@@ -9,8 +9,10 @@ mod fkcc;
 pub struct Panda;
 
 impl Panda {
+    pub const DIM: usize = 7;
+
     #[expect(clippy::approx_constant)]
-    pub const BOUNDS: [Vector<DIM, f32>; 2] = [
+    pub const BOUNDS: [Vector<{ Self::DIM }, f32>; 2] = [
         Vector([
             -2.9671, -1.8326, -2.9671, -3.1416, -2.9671, -0.0873, -2.9671,
         ]),
@@ -18,9 +20,7 @@ impl Panda {
     ];
 }
 
-const DIM: usize = 7;
-
-type ConfigurationBlock<const L: usize> = [Simd<f32, L>; DIM];
+type ConfigurationBlock<const L: usize> = [Simd<f32, L>; Panda::DIM];
 
 impl Robot<7, f32> for Panda {
     type World = World3d<f32>;

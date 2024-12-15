@@ -34,3 +34,6 @@ test = true
 
 [[example]]
 name = "plan_panda"
+
+[dev-dependencies]
+rubullet = "0.1.0-alpha-3"
