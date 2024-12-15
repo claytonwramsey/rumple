@@ -1,12 +1,15 @@
 #![feature(portable_simd)]
 
 use std::{
+    array,
+    convert::identity,
     thread::sleep,
     time::{Duration, Instant},
 };
 
 use rand::SeedableRng;
 use rand_chacha::ChaCha20Rng;
+use rubullet::{nalgebra::Isometry3, MultiBodyOptions, UrdfOptions};
 use rumple::{
     geo::rrt_connect,
     nn::KiddoMap,
@@ -100,9 +103,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(rake.is_valid_transition(&q1, &q2));
     }
 
+    // render for debugging
+    let mut physics_client = rubullet::PhysicsClient::connect(rubullet::Mode::Gui)?;
+    physics_client.set_gravity([0.0, 0.0, -9.81]);
+
+    let panda_id = physics_client.load_urdf(
+        "resources/panda/panda.urdf",
+        UrdfOptions {
+            use_fixed_base: true,
+            flags: rubullet::LoadModelFlags::URDF_PRINT_URDF_INFO,
+            ..Default::default()
+        },
+    )?;
+
+    for center in sphere_centers {
+        let radius = r as f64;
+        let [x, y, z] = center.map(|v| v as f64);
+        let vis_shape = physics_client.create_visual_shape(
+            rubullet::GeometricVisualShape::Sphere { radius },
+            rubullet::VisualShapeOptions {
+                frame_offset: rubullet::nalgebra::Isometry3::translation(0.0, 0.0, 0.0),
+                rgba_colors: [1.0, 1.0, 1.0, 1.0],
+                ..Default::default()
+            },
+        )?;
+        let col_shape = physics_client
+            .create_collision_shape(rubullet::GeometricCollisionShape::Sphere { radius }, None)?;
+        let _mb_shape = physics_client.create_multi_body(
+            col_shape,
+            vis_shape,
+            MultiBodyOptions {
+                base_pose: Isometry3::translation(x, y, z),
+                ..Default::default()
+            },
+        )?;
+    }
+
     // construct interpolated trajectory
-    let res = 0.1;
-    let interp = traj
+    let res = 0.01;
+    let mut interp = traj
         .first()
         .copied()
         .into_iter()
@@ -113,37 +152,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|q| q.map(|x| x as f64))
         .collect::<Vec<_>>();
 
-    // render for debugging
-    let mut physics_client = rubullet::PhysicsClient::connect(rubullet::Mode::Gui)?;
-    physics_client.set_gravity([0.0, 0.0, -9.81]);
-
-    physics_client.set_additional_search_path("resources/panda")?;
-    let panda_id = physics_client.load_urdf("panda.urdf", None)?;
-
-    for [x, y, z] in sphere_centers {
-        physics_client.create_visual_shape(
-            rubullet::GeometricVisualShape::Sphere { radius: r as f64 },
-            rubullet::VisualShapeOptions {
-                frame_offset: rubullet::nalgebra::Isometry3::translation(
-                    x as f64, y as f64, z as f64,
-                ),
-                ..Default::default()
-            },
-        )?;
-    }
-
-    for q in interp {
-        for (joint_id, joint_pos) in q.into_iter().enumerate() {
-            physics_client.set_joint_motor_control(
+    loop {
+        for q in &interp {
+            physics_client.set_joint_motor_control_array(
                 panda_id,
-                joint_id,
-                rubullet::ControlCommand::Position(joint_pos),
+                &array::from_fn::<_, { Panda::DIM }, _>(identity),
+                rubullet::ControlCommandArray::Positions(q),
                 None,
-            );
+            )?;
+            physics_client.step_simulation()?;
+
+            sleep(Duration::from_secs_f64(1.0 / 60.0));
         }
 
-        sleep(Duration::from_secs_f64(1.0 / 60.0));
+        interp.reverse();
     }
 
-    Ok(())
+    // Ok(())
 }
